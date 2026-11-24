@@ -356,3 +356,7 @@ Everything else, such as `.claude.json` and the plugin cache, is created in the 
 - The MCP gateway supports only remote (HTTP) MCP servers, not stdio ones
 - Different projects with the same directory name get the same sandbox name (avoid it with `--name`)
 - Names starting with `msbx-` can't be used in `microsandbox_config.scripts` (they're for msbx's built-in scripts)
+
+## License
+
+[MIT](LICENSE)
