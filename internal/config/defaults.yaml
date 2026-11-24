@@ -1,0 +1,99 @@
+# Built-in defaults. The config file (~/.config/msbx/config.yaml) is layered on top
+version: 1
+
+# What run starts when not given on the command line: claude, or shell (starts command)
+agent: claude
+command: [bash]
+
+# Don't remove the sandbox on exit (same as run --keep)
+keep: false
+
+# microsandbox's own config (passed to msb create --conf). Only network gets entries added by
+# msbx and is passed via --net-conf
+microsandbox_config:
+  image: msbx-default:latest    # msbx builds this one from its own Dockerfile; others are pulled by microsandbox
+  cpus: 2
+  memory: 4G
+  network:
+    policy: none
+    allow: []
+    # Domains not intercepted (tls.bypass) would be rejected as "uninspectable" under strict
+    strict: false
+
+# msb create flags for what the config format can't express, passed as-is (name -> value).
+# A list repeats the flag, true gives a bare flag, false or null omits it
+microsandbox_flags:
+  root-disk: 8G
+
+secret_sources: {}
+
+# The claude agent. Adds its token secret and the hosts it needs (api.anthropic.com, platform.claude.com,
+# and OTEL endpoints from the org's remote settings and the shared settings.json). Brings in the org
+# settings cache and consent from the host if present
+claude:
+  secret_source: {env: CLAUDE_CODE_OAUTH_TOKEN}   # the host's environment variable of the same name
+  # A file whose contents are appended to msbx's built-in sandbox prompt (relative to the config dir), or ""
+  extra_system_prompt: ""
+  config_dir: /root/.claude-state
+  # MCP servers to use through the MCP gateway, with msbx's own logins: by name in mcp_gateway.servers or the
+  # host claude's user-scope servers (mcpServers in ~/.claude.json)
+  mcp_servers: []
+  # claude.ai connectors to use through the MCP gateway, by display name (e.g. Slack). Only these use the
+  # host claude's claude.ai token, read from the host keychain; with none, msbx never reads it
+  claude_ai_connectors: []
+  host_share:
+    sessions: true
+    config: true
+    # Skills in the host's ~/.claude/skills to share read-only, by name, or ["*"] for all. Each is
+    # mounted from where its symlink points. Skills needing host tools won't work in the VM
+    skills: []
+
+docker:
+  enabled: true
+  disk: 20G
+  emulation: true
+  # Log the VM's Docker in to an ECR registry. Also allows the S3 bucket for its image layers
+  ecr:
+    enabled: false
+    registry: ""
+    secret_source: {}           # default: aws ecr get-login-password --region <registry's region>
+
+# Copies of the host's git settings, made when the sandbox is created
+git:
+  host_user: true    # the [user] section of the global gitconfig (name, email, ...)
+  host_ignore: true  # the global ignore file (core.excludesfile, else ~/.config/git/ignore)
+
+# GH_TOKEN for github.com, and git in the VM uses HTTPS with it for GitHub's SSH URLs.
+# Also allows github.com, api.github.com, codeload.github.com, *.githubusercontent.com and ghcr.io
+github:
+  enabled: false
+  secret_source: {command: gh auth token}
+  # Allow port 22 by GitHub's IP ranges (from gh api meta) so SSH such as ssh-keyscan connects
+  # without microsandbox's 5s wait on domain rules
+  fast_ssh_keyscan: false
+
+# uv in the VM keeps a project's virtualenv in the VM (/root/.venvs/<project path>) instead of the
+# project's .venv, which is shared with the host and holds binaries for the host's OS
+uv:
+  vm_venv: true
+
+network_extras:
+  tls_intercept: []
+
+# The MCP gateway on the host (msbx mcp-gw), which forwards the VM's MCP requests with tokens that stay
+# on the host. It listens on a unix socket per sandbox, not on the network
+mcp_gateway:
+  # The port in the VM claude sends MCP requests to (127.0.0.1:<port>, relayed by socat), and the vsock
+  # port the sandbox's socket is exposed on
+  port: 41837
+  # MCP servers msbx logs in to itself with OAuth (msbx mcp login <name>). Tokens are kept in the
+  # host keychain and refreshed by the gateway. What an entry leaves out comes from the host claude's server
+  # of the same name: url, and when the url is the same, client_id and callback_port. So a host claude
+  # server needs an entry only for client_secret_source or scope
+  servers: {}
+  #   example:
+  #     url: https://mcp.example.com/mcp
+  #     client_id: abc123          # for a server without dynamic client registration
+  #     callback_port: 13579       # the redirect port registered for client_id (http://localhost:<port>/callback)
+  #     client_secret_source: {}   # for a confidential client_id
+  #     scope: ""                  # default: what the server asks for
