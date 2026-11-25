@@ -191,7 +191,7 @@ func TestBuildPlanShell(t *testing.T) {
 	if got := flagValues(p.flags, "--volume"); !slices.Equal(got, []string{"/work/repo:/work/repo"}) {
 		t.Errorf("--volume = %v, want only the workspace", got)
 	}
-	if got := flagValues(p.flags, "--secret"); !slices.Equal(got, []string{"GH_TOKEN@github.com"}) {
+	if got := flagValues(p.flags, "--secret"); !slices.Equal(got, []string{"GH_TOKEN@github.com,api.github.com"}) {
 		t.Errorf("--secret = %v", got)
 	}
 	if got := flagValues(p.flags, "--mount-owned"); !slices.Equal(got, []string{"/var/lib/docker:kind=disk,size=20G"}) {

@@ -63,8 +63,8 @@ git:
   host_user: true    # the [user] section of the global gitconfig (name, email, ...)
   host_ignore: true  # the global ignore file (core.excludesfile, else ~/.config/git/ignore)
 
-# GH_TOKEN for github.com, and git in the VM uses HTTPS with it for GitHub's SSH URLs.
-# Also allows github.com, api.github.com, codeload.github.com, *.githubusercontent.com and ghcr.io
+# GH_TOKEN for github.com and api.github.com (git and gh), and git in the VM uses HTTPS with it for GitHub's SSH URLs.
+# Also allows codeload.github.com, *.githubusercontent.com and ghcr.io
 github:
   enabled: false
   secret_source: {env: GH_TOKEN}    # the host's environment variable of the same name

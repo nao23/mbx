@@ -35,7 +35,7 @@ func newClaude(cfg *config.Config) *claude {
 func (c *claude) Feature(workspace string, gateway *mcpgateway.Registration) feature.Feature {
 	f := feature.Feature{
 		Name:    "claude",
-		Secret:  &feature.Secret{Env: "CLAUDE_CODE_OAUTH_TOKEN", Host: "api.anthropic.com", Source: c.cfg.Claude.SecretSource},
+		Secret:  &feature.Secret{Env: "CLAUDE_CODE_OAUTH_TOKEN", Hosts: []string{"api.anthropic.com"}, Source: c.cfg.Claude.SecretSource},
 		Allow:   append([]string{"platform.claude.com"}, c.telemetry...),
 		Flags:   c.flags(workspace),
 		Patches: c.patches(workspace, gateway),

@@ -76,7 +76,7 @@ The image needs what the agent and the enabled features run (Ubuntu package name
 - `docker`: `dockerd` and the docker CLI (`docker.io`), `iptables`, `dnsmasq` (`dnsmasq-base`)
 - `docker.emulation`: QEMU user mode with its binfmt entries (`qemu-user`, `qemu-user-binfmt`)
 - `docker.ecr`: what `docker` needs
-- `github`: `git`
+- `github`: `git`, and `gh` to use the GitHub CLI
 - `uv`: `uv`
 - MCP servers: `socat`
 
@@ -232,7 +232,7 @@ The environment variable in the VM and the destination are fixed; only the sourc
 |---|---|---|
 | `claude` | `CLAUDE_CODE_OAUTH_TOKEN` → `api.anthropic.com` | Also allows `platform.claude.com` |
 | `docker.ecr` | `ECR_TOKEN` → `registry` | Also allows the S3 bucket holding image layers (`prod-<region>-starport-layer-bucket.s3.<region>.amazonaws.com`). Logs `docker` in the VM in to ECR |
-| `github` | `GH_TOKEN` → `github.com` | Also allows `api.github.com`, `codeload.github.com`, `*.githubusercontent.com` and `ghcr.io`. Makes git in the VM rewrite `git@github.com:` / `ssh://git@github.com/` to HTTPS with the token |
+| `github` | `GH_TOKEN` → `github.com`, `api.github.com` | Lets `git` and `gh` in the VM use the token. Also allows `codeload.github.com`, `*.githubusercontent.com` and `ghcr.io`. Makes git in the VM rewrite `git@github.com:` / `ssh://git@github.com/` to HTTPS with the token |
 
 By default these tokens come from the host's environment variables of the same name (`GH_TOKEN`, `ECR_TOKEN`). To fetch them on each run instead, set e.g. `{command: gh auth token}` or `{command: aws ecr get-login-password --region <region>}`. To keep the VM from pushing to GitHub, give it a read-only fine-grained personal access token.
 

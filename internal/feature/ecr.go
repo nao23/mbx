@@ -30,7 +30,7 @@ func newECR(cfg *config.Config) (*Feature, error) {
 	region := ecrRegion(e.Registry)
 	f := &Feature{
 		Name:   "docker.ecr",
-		Secret: &Secret{Env: "ECR_TOKEN", Host: e.Registry, Source: e.SecretSource},
+		Secret: &Secret{Env: "ECR_TOKEN", Hosts: []string{e.Registry}, Source: e.SecretSource},
 		Setup: &Setup{
 			"Log in to ECR ($ECR_TOKEN is a placeholder, swapped for the real value on send)",
 			"ECR_REGISTRY=" + shell.Quote(e.Registry) + "\n" + ecrScript,

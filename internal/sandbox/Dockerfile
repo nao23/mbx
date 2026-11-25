@@ -17,11 +17,12 @@ FROM ubuntu:26.04
 # - qemu-user / qemu-user-binfmt: run containers for other architectures, such as amd64
 # - build-essential etc.: build Python packages with C extensions (mysqlclient, etc.)
 # - socat: relays claude's MCP requests to the MCP gateway's socket over vsock
+# - gh: GitHub CLI, authenticated with $GH_TOKEN by the github feature
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       git python3 python3-pip python3-venv curl ca-certificates jq ripgrep less vim-tiny unzip make \
       docker.io docker-compose-v2 docker-buildx iptables nftables dnsmasq-base qemu-user qemu-user-binfmt \
-      build-essential pkg-config python3-dev default-libmysqlclient-dev socat \
+      build-essential pkg-config python3-dev default-libmysqlclient-dev socat gh \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=claude-code /claude /usr/local/bin/claude
 COPY --from=uv /uv /uvx /usr/local/bin/

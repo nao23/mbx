@@ -48,7 +48,7 @@ func resolveSecrets(r *msb.Runner, cfg *config.Config, features []feature.Featur
 	}
 	for _, f := range features {
 		if s := f.Secret; s != nil {
-			fetches = append(fetches, fetch{f.Name, s.Env, s.Host, s.Source})
+			fetches = append(fetches, fetch{f.Name, s.Env, strings.Join(s.Hosts, ", "), s.Source})
 		}
 	}
 	if len(fetches) == 0 {

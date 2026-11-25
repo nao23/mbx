@@ -20,8 +20,8 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 	}
 	f := &Feature{
 		Name:   "github",
-		Secret: &Secret{Env: "GH_TOKEN", Host: "github.com", Source: g.SecretSource},
-		Allow:  []string{"api.github.com", "codeload.github.com", "*.githubusercontent.com", "ghcr.io"},
+		Secret: &Secret{Env: "GH_TOKEN", Hosts: []string{"github.com", "api.github.com"}, Source: g.SecretSource},
+		Allow:  []string{"codeload.github.com", "*.githubusercontent.com", "ghcr.io"},
 		Setup:  &Setup{"Rewrite git's GitHub SSH URLs to HTTPS with $GH_TOKEN (a placeholder, swapped on send)", githubScript},
 	}
 	if g.FastSSHKeyscan {

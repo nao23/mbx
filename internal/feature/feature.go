@@ -10,7 +10,7 @@ import (
 
 type Feature struct {
 	Name   string  // the config key that enables it, or the agent's name
-	Secret *Secret // the VM gets a placeholder, swapped for the real value only when sent to Host
+	Secret *Secret // the VM gets a placeholder, swapped for the real value only when sent to one of Hosts
 	Allow  []string
 	// IPRules are allow rules by IP, placed before the domains. A func, as fetching them may take a request
 	IPRules func() []string
@@ -21,7 +21,7 @@ type Feature struct {
 
 type Secret struct {
 	Env    string
-	Host   string
+	Hosts  []string
 	Source secret.Source
 }
 

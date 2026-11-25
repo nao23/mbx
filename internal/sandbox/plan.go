@@ -101,7 +101,7 @@ func buildPlan(cfg *config.Config, workspace, name string, gateway *mcpgateway.R
 		if s := f.Secret; s != nil {
 			flags = append(flags, msb.Flag{
 				Name:  "--secret",
-				Value: s.Env + "@" + s.Host,
+				Value: s.Env + "@" + strings.Join(s.Hosts, ","),
 				Note:  "Agent and feature tokens (the VM gets a placeholder; the real value is swapped in on send)",
 			})
 		}
@@ -114,7 +114,9 @@ func buildPlan(cfg *config.Config, workspace, name string, gateway *mcpgateway.R
 	var ipRules []string
 	for _, f := range features {
 		if s := f.Secret; s != nil {
-			hosts = append(hosts, allowHost{name: s.Host, intercept: true})
+			for _, h := range s.Hosts {
+				hosts = append(hosts, allowHost{name: h, intercept: true})
+			}
 		}
 		for _, h := range f.Allow {
 			hosts = append(hosts, allowHost{name: h})

@@ -82,10 +82,12 @@ func TestDocker(t *testing.T) {
 	}
 }
 
-// github sends GH_TOKEN (from the host's GH_TOKEN) to github.com, and adds IP rules only with fast_ssh_keyscan
+// github sends GH_TOKEN (from the host's GH_TOKEN) to github.com (git) and api.github.com (gh), and adds IP rules only
+// with fast_ssh_keyscan
 func TestGitHub(t *testing.T) {
 	f, _ := newGitHub(loadConfig(t, "github: {enabled: true}\n"))
-	if f.Secret.Env != "GH_TOKEN" || f.Secret.Host != "github.com" || f.Secret.Source.Env != "GH_TOKEN" {
+	if f.Secret.Env != "GH_TOKEN" || !slices.Equal(f.Secret.Hosts, []string{"github.com", "api.github.com"}) ||
+		f.Secret.Source.Env != "GH_TOKEN" {
 		t.Errorf("Secret = %+v", f.Secret)
 	}
 	if f.IPRules != nil {
@@ -128,7 +130,7 @@ func TestECR(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The token defaults to the host's ECR_TOKEN; the region gives the S3 host
-	if s := f.Secret; s.Host != "123456789012.dkr.ecr.ap-northeast-1.amazonaws.com" ||
+	if s := f.Secret; !slices.Equal(s.Hosts, []string{"123456789012.dkr.ecr.ap-northeast-1.amazonaws.com"}) ||
 		s.Source.Env != "ECR_TOKEN" {
 		t.Errorf("Secret = %+v", s)
 	}
