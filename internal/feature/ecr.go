@@ -3,7 +3,6 @@ package feature
 import (
 	_ "embed"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/nao23/msbx/internal/config"
@@ -25,16 +24,13 @@ func newECR(cfg *config.Config) (*Feature, error) {
 	if e.Registry == "" {
 		return nil, errors.New("docker.ecr.registry is not set")
 	}
-	region, source := ecrRegion(e.Registry), e.SecretSource
-	if source == (secret.Source{}) {
-		if region == "" {
-			return nil, fmt.Errorf("can't tell the region of %q; set docker.ecr.secret_source", e.Registry)
-		}
-		source = secret.Source{Command: "aws ecr get-login-password --region " + region}
+	if e.SecretSource == (secret.Source{}) {
+		return nil, errors.New("docker.ecr.secret_source is not set")
 	}
+	region := ecrRegion(e.Registry)
 	f := &Feature{
 		Name:   "docker.ecr",
-		Secret: &Secret{Env: "ECR_TOKEN", Host: e.Registry, Source: source},
+		Secret: &Secret{Env: "ECR_TOKEN", Host: e.Registry, Source: e.SecretSource},
 		Setup: &Setup{
 			"Log in to ECR ($ECR_TOKEN is a placeholder, swapped for the real value on send)",
 			"ECR_REGISTRY=" + shell.Quote(e.Registry) + "\n" + ecrScript,

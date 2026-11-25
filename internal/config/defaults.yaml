@@ -56,7 +56,7 @@ docker:
   ecr:
     enabled: false
     registry: ""
-    secret_source: {}           # default: aws ecr get-login-password --region <registry's region>
+    secret_source: {env: ECR_TOKEN}   # the host's environment variable of the same name
 
 # Copies of the host's git settings, made when the sandbox is created
 git:
@@ -67,8 +67,8 @@ git:
 # Also allows github.com, api.github.com, codeload.github.com, *.githubusercontent.com and ghcr.io
 github:
   enabled: false
-  secret_source: {command: gh auth token}
-  # Allow port 22 by GitHub's IP ranges (from gh api meta) so SSH such as ssh-keyscan connects
+  secret_source: {env: GH_TOKEN}    # the host's environment variable of the same name
+  # Allow port 22 by GitHub's IP ranges (from api.github.com/meta) so SSH such as ssh-keyscan connects
   # without microsandbox's 5s wait on domain rules
   fast_ssh_keyscan: false
 

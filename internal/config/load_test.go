@@ -110,7 +110,7 @@ func TestLoadProjectsExpandsHome(t *testing.T) {
 func TestSecretSourceIsReplaced(t *testing.T) {
 	writeConfig(t, `
 		github:
-		  secret_source: {keychain: my-gh}      # the default is {command: gh auth token}
+		  secret_source: {keychain: my-gh}      # the default is {env: GH_TOKEN}
 		secret_sources:
 		  MY_TOKEN: {keychain: my-token}
 		projects:

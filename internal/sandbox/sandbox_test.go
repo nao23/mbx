@@ -76,7 +76,7 @@ func TestValidate(t *testing.T) {
 		{"ok", "version: 1\n", ""},
 		{"ecr without docker", "docker: {enabled: false, ecr: {enabled: true, registry: 1.dkr.ecr.r.amazonaws.com}}\n", "requires docker"},
 		{"ecr without registry", "docker: {ecr: {enabled: true}}\n", "registry is not set"},
-		{"ecr without region", "docker: {ecr: {enabled: true, registry: registry.example.com}}\n", "can't tell the region"},
+		{"ecr without secret source", "docker: {ecr: {enabled: true, registry: registry.example.com, secret_source: {}}}\n", "secret_source is not set"},
 		{"no image", "microsandbox_config: {image: \"\"}\n", "image is not set"},
 		{"mcp server defined", "claude: {mcp_servers: [g]}\nmcp_gateway: {servers: {g: {url: https://g.example.com/mcp}}}\n", ""},
 		{"mcp server not defined", "claude: {mcp_servers: [g]}\n", "has no url"},

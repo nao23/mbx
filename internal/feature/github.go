@@ -2,8 +2,10 @@ package feature
 
 import (
 	_ "embed"
-	"os/exec"
+	"encoding/json"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/nao23/msbx/internal/config"
 )
@@ -28,12 +30,30 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 	return f, nil
 }
 
-// githubSSHRules allows SSH to GitHub's git IP ranges. microsandbox waits up to 5s on a connection matching a
-// domain rule to read its TLS SNI, which stalls clients that wait for the server first, like ssh-keyscan
+// githubMetaURL lists GitHub's IP ranges. It needs no auth (60 requests an hour per IP). A variable for tests
+var githubMetaURL = "https://api.github.com/meta"
+
+// githubSSHRules allows SSH to GitHub's git IP ranges (IPv4 only). microsandbox waits up to 5s on a connection
+// matching a domain rule to read its TLS SNI, which stalls clients that wait for the server first, like
+// ssh-keyscan. Without the ranges, SSH still works, just with the wait
 func githubSSHRules() []string {
-	out, err := exec.Command("gh", "api", "meta", "--jq", `.git[] | select(contains(":") | not) | . + ":tcp:22"`).Output()
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(githubMetaURL)
 	if err != nil {
 		return nil
 	}
-	return strings.Fields(string(out))
+	defer resp.Body.Close()
+	var meta struct {
+		Git []string `json:"git"`
+	}
+	if resp.StatusCode != http.StatusOK || json.NewDecoder(resp.Body).Decode(&meta) != nil {
+		return nil
+	}
+	var rules []string
+	for _, cidr := range meta.Git {
+		if !strings.Contains(cidr, ":") {
+			rules = append(rules, cidr+":tcp:22")
+		}
+	}
+	return rules
 }

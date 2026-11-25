@@ -17,10 +17,7 @@ The config is a single YAML file. microsandbox's own settings are passed to micr
 - [microsandbox](https://docs.microsandbox.dev) (`msb`; tested with the Homebrew install)
 - Go (to install)
 - Docker on the host (to build the default image; Lima etc. is fine)
-- Depending on the features you use:
-  - `gh`: for `github` (the default token source)
-  - `aws`: for `docker.ecr` (the default token source)
-  - `git`: for `git` (reading config)
+- `git` (for the `git` feature, reading config)
 
 ## Installation
 
@@ -170,7 +167,7 @@ docker:
   ecr:                          # log docker in the VM in to ECR (run --ecr)
     enabled: false
     registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
-    secret_source:              # defaults to aws ecr get-login-password --region <the registry's region>
+    secret_source:              # defaults to the host's ECR_TOKEN
       command: aws ecr get-login-password --region ap-northeast-1 --profile my-profile
 
 git:                            # copy the host's git settings when the sandbox is created
@@ -179,7 +176,7 @@ git:                            # copy the host's git settings when the sandbox 
 
 github:                         # make a GitHub token available (run --github)
   enabled: false
-  secret_source: {command: gh auth token}
+  secret_source: {command: gh auth token}   # defaults to the host's GH_TOKEN
   fast_ssh_keyscan: false       # let SSH to GitHub (ssh-keyscan, etc.) through without waiting
 
 uv:
@@ -237,7 +234,7 @@ The environment variable in the VM and the destination are fixed; only the sourc
 | `docker.ecr` | `ECR_TOKEN` → `registry` | Also allows the S3 bucket holding image layers (`prod-<region>-starport-layer-bucket.s3.<region>.amazonaws.com`). Logs `docker` in the VM in to ECR |
 | `github` | `GH_TOKEN` → `github.com` | Also allows `api.github.com`, `codeload.github.com`, `*.githubusercontent.com` and `ghcr.io`. Makes git in the VM rewrite `git@github.com:` / `ssh://git@github.com/` to HTTPS with the token |
 
-The default GitHub token is `gh auth token` (with repo scope), so you can push from the VM. For read-only access, set a read-only fine-grained PAT as the `secret_source`.
+By default these tokens come from the host's environment variables of the same name (`GH_TOKEN`, `ECR_TOKEN`). To fetch them on each run instead, set e.g. `{command: gh auth token}` or `{command: aws ecr get-login-password --region <region>}`. To keep the VM from pushing to GitHub, give it a read-only fine-grained personal access token.
 
 ### Your own
 
@@ -309,7 +306,7 @@ There are two kinds of servers, with tokens from different places:
 - microsandbox replaces lists whole when layering configs, so for `network` msbx adds its entries first and passes it as one config
 - A rule with only a domain (`github.com`, etc.) allows all ports. To restrict ports, write e.g. `github.com:tcp:443`
 - For connections matching a domain rule, microsandbox waits up to 5 seconds for the first bytes sent (to read the SNI or Host and check the connection is to an allowed domain). Protocols where the server speaks first, like SSH, wait 5 seconds on every connection. Connections allowed by an IP rule don't wait
-- `github.fast_ssh_keyscan` fetches GitHub's git IP ranges with `gh api meta` and allows port 22 to them as IP rules placed before the domains. SSH to GitHub (`ssh-keyscan` during builds, etc.) then connects without waiting
+- `github.fast_ssh_keyscan` fetches GitHub's git IP ranges from its public `api.github.com/meta` and allows port 22 to them as IP rules placed before the domains. SSH to GitHub (`ssh-keyscan` during builds, etc.) then connects without waiting
 
 ### Docker in the VM
 
