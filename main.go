@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 
 	"github.com/nao23/msbx/internal/config"
@@ -42,26 +41,16 @@ Config file: ~/.config/msbx/config.yaml (override with the MSBX_CONFIG env var)`
 		newStopCmd(),
 		newRmCmd(),
 		newRebuildCmd(),
-		newConfigCmd(),
 		newMCPCmd(),
 		newMCPGatewayCmd(),
 	)
 	return root
 }
 
-// runOptions are shared by run and config, which shows what run would do.
 type runOptions struct {
-	name, agent                         string
-	keep, noDocker, ecr, github, dryRun bool
-	rest                                []string // args after -- for run, DIR for config
-}
-
-func (o *runOptions) addFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.name, "name", "", "sandbox name (default: <agent>-<dir>)")
-	fs.BoolVar(&o.keep, "keep", false, "keep the sandbox on exit")
-	fs.BoolVar(&o.noDocker, "no-docker", false, "don't use Docker Engine in the VM")
-	fs.BoolVar(&o.ecr, "ecr", false, "enable the ECR integration in the config")
-	fs.BoolVar(&o.github, "github", false, "enable the GitHub integration in the config")
+	name, agent                                     string
+	keep, noDocker, ecr, github, dryRun, showConfig bool
+	rest                                            []string // args after --
 }
 
 // setArgs takes the agent (claude or shell) from the first argument, unless it comes after --.
@@ -95,7 +84,8 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 		Example: `  msbx run
   msbx run claude -- -p "summarize this repo"
   msbx run shell -- make test
-  msbx run --github --dry-run`,
+  msbx run --github --dry-run
+  msbx run shell --show-config`,
 		ValidArgsFunction: completeAgent,
 		// Only the agent may come before --, so a stray word isn't passed to claude as a prompt
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -118,9 +108,17 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 			if err != nil {
 				return err
 			}
-			_, sb, err := setup(o, workspace)
+			cfg, sb, err := setup(o, workspace)
 			if err != nil {
 				return err
+			}
+			if o.showConfig {
+				out, err := yaml.Marshal(cfg)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("# Config file: %s\n# Workspace: %s\n\n%s", config.Path(), workspace, out)
+				return nil
 			}
 			code, err := sb.Run(o.rest)
 			if err != nil {
@@ -133,56 +131,20 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 			return nil
 		},
 	}
-	o.addFlags(cmd.Flags())
-	cmd.Flags().BoolVar(
+	fs := cmd.Flags()
+	fs.StringVar(&o.name, "name", "", "sandbox name (default: <agent>-<dir>)")
+	fs.BoolVar(&o.keep, "keep", false, "keep the sandbox on exit")
+	fs.BoolVar(&o.noDocker, "no-docker", false, "don't use Docker Engine in the VM")
+	fs.BoolVar(&o.ecr, "ecr", false, "enable the ECR integration in the config")
+	fs.BoolVar(&o.github, "github", false, "enable the GitHub integration in the config")
+	fs.BoolVar(
 		&o.dryRun,
 		"dry-run",
 		false,
 		"print the commands it would run, in order, without running anything (no secrets are fetched)",
 	)
-	return cmd
-}
-
-func newConfigCmd() *cobra.Command {
-	var o runOptions
-	cmd := &cobra.Command{
-		Use:   "config [claude|shell] [flags] [DIR]",
-		Short: "Show the merged config and what run would pass to msb create",
-		Long: `Show the merged config, with the options applied, and what run would pass to msb create when run in
-DIR (default: the current directory).`,
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			if len(args) == 0 {
-				return []string{"claude", "shell"}, cobra.ShellCompDirectiveFilterDirs
-			}
-			return nil, cobra.ShellCompDirectiveFilterDirs
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			o.setArgs(cmd, args)
-			if len(o.rest) > 1 {
-				return fmt.Errorf("too many arguments: %v (see %s --help)", o.rest, cmd.CommandPath())
-			}
-			workspace, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-			if len(o.rest) > 0 {
-				workspace = config.ExpandHome(o.rest[0])
-			}
-			cfg, sb, err := setup(o, workspace)
-			if err != nil {
-				return err
-			}
-			out, err := yaml.Marshal(cfg)
-			if err != nil {
-				return err
-			}
-			fmt.Printf("# Config file: %s\n# Workspace: %s\n", config.Path(), workspace)
-			fmt.Printf("\n# --- Merged config (with the command-line options)\n%s", out)
-
-			return sb.PrintPlan()
-		},
-	}
-	o.addFlags(cmd.Flags())
+	fs.BoolVar(&o.showConfig, "show-config", false, "print the merged config, with the options applied, and exit")
+	cmd.MarkFlagsMutuallyExclusive("dry-run", "show-config")
 	return cmd
 }
 

@@ -91,6 +91,7 @@ msbx run shell                   # start a shell (bash by default)
 msbx run shell -- make test      # start any command
 msbx run --keep                  # keep the sandbox after exit
 msbx run --dry-run               # only show the steps (runs nothing, fetches no secrets)
+msbx run --show-config           # only show the merged config, with the options applied
 ```
 
 | Command | Description |
@@ -100,7 +101,6 @@ msbx run --dry-run               # only show the steps (runs nothing, fetches no
 | `msbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
 | `msbx rm NAME...` | Remove sandboxes. Session history shared with the host is kept |
 | `msbx rebuild` | Rebuild the default image (`msbx-default:latest`). Use it to update Claude Code |
-| `msbx config [claude\|shell] [OPTIONS] [DIR]` | Show the merged config and what's passed to `msb create` |
 | `msbx mcp [status\|login\|logout]` | msbx's logins to MCP servers: their state and where the credentials are kept (see below) |
 | `msbx mcp-gw [status\|start\|stop\|restart]` | Manage the MCP gateway (see below) |
 | `msbx completion zsh\|bash\|fish` | Print a shell completion script |
@@ -209,7 +209,7 @@ Layered in this order: defaults → the config file → the `projects:` entries 
 - Only `microsandbox_config.network.allow` is appended to instead of replaced
 - `secret_source` (and each entry of `secret_sources`) is replaced whole instead of merged key by key, so `keychain` and `command` don't get mixed
 
-`msbx config` shows the final config.
+`msbx run --show-config` shows the final config.
 
 ## Secrets
 

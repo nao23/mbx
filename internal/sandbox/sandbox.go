@@ -13,8 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/nao23/msbx/internal/agent"
 	"github.com/nao23/msbx/internal/config"
 	"github.com/nao23/msbx/internal/feature"
@@ -123,32 +121,6 @@ func (s *Sandbox) start(args []string) error {
 	err := s.r.Run(append([]string{"exec", "-t", s.name, "--"}, command...)...)
 	fmt.Fprintln(os.Stderr)
 	return err
-}
-
-// PrintPlan prints what would be passed to msb create, with a placeholder MCP gateway socket ID.
-func (s *Sandbox) PrintPlan() error {
-	var gateway *mcpgateway.Registration
-	if servers := s.ag.MCPServers(); len(servers) > 0 {
-		gateway = &mcpgateway.Registration{ID: "<id>", Servers: servers}
-	}
-	p := buildPlan(s.cfg, s.workspace, s.name, gateway)
-
-	for _, sec := range []struct {
-		title string
-		v     any
-	}{
-		{"msb create --conf", p.conf},
-		{"msb create --net-conf", p.net},
-	} {
-		out, err := yaml.Marshal(sec.v)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("\n# --- %s\n%s", sec.title, out)
-	}
-	fmt.Println("\n# --- msb create flags")
-	s.r.ShowFlags("msb create", p.flags)
-	return nil
 }
 
 // Labels on the sandboxes msbx creates, to tell them from others
