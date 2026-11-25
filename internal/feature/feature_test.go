@@ -86,7 +86,7 @@ func TestDocker(t *testing.T) {
 var githubHosts = []string{"codeload.github.com", "*.githubusercontent.com", "ghcr.io"}
 
 // github sends GH_TOKEN (from the host's GH_TOKEN) to github.com (git) and api.github.com (gh), and allows
-// only its fixed hosts without fast_ssh_keyscan
+// only its fixed hosts without fast_ssh_keyscan or allow. An unknown allow group is an error
 func TestGitHub(t *testing.T) {
 	f, _ := newGitHub(loadConfig(t, "github: {enabled: true}\n"))
 	if f.Secret.Env != "GH_TOKEN" || !slices.Equal(f.Secret.Hosts, []string{"github.com", "api.github.com"}) ||
@@ -96,15 +96,22 @@ func TestGitHub(t *testing.T) {
 	if !slices.Equal(f.Allow, githubHosts) {
 		t.Errorf("Allow = %v, want %v", f.Allow, githubHosts)
 	}
+	if _, err := newGitHub(loadConfig(t, "github: {enabled: true, allow: [actions]}\n")); err == nil {
+		t.Error("unknown allow group: want an error")
+	}
 }
 
-// fast_ssh_keyscan also allows port 22 to GitHub's IPv4 git ranges from /meta, fetched once per process, and
-// nothing more if it can't be read
-func TestGitHubSSHRules(t *testing.T) {
+// From /meta (fetched once per process), fast_ssh_keyscan also allows port 22 to GitHub's IPv4 git ranges, and
+// allow: [actions_storage] the Actions artifact storage hosts; nothing more if /meta can't be read
+func TestGitHubMeta(t *testing.T) {
 	requests := 0
 	meta := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
-		w.Write([]byte(`{"git": ["192.30.252.0/22", "2a0a:a440::/29", "140.82.112.0/20"], "web": ["1.2.3.4/32"]}`))
+		w.Write([]byte(`{
+			"git": ["192.30.252.0/22", "2a0a:a440::/29", "140.82.112.0/20"], "web": ["1.2.3.4/32"],
+			"domains": {"actions": ["*.actions.githubusercontent.com", "productionresultssa0.blob.core.windows.net",
+				"productionresultssa100.blob.core.windows.net"]}
+		}`))
 	}))
 	defer meta.Close()
 	origURL, origMeta := githubMetaURL, githubMeta
@@ -113,13 +120,17 @@ func TestGitHubSSHRules(t *testing.T) {
 		githubMetaURL = url
 		githubMeta = sync.OnceValue(fetchGitHubMeta)
 	}
-	cfg := loadConfig(t, "github: {enabled: true, fast_ssh_keyscan: true}\n")
+	ssh := []string{"192.30.252.0/22:tcp:22", "140.82.112.0/20:tcp:22"}
+	storage := []string{"productionresultssa0.blob.core.windows.net", "productionresultssa100.blob.core.windows.net"}
 
 	useMeta(meta.URL)
-	want := append(slices.Clone(githubHosts), "192.30.252.0/22:tcp:22", "140.82.112.0/20:tcp:22")
-	for range 2 {
-		if f, _ := newGitHub(cfg); !slices.Equal(f.Allow, want) {
-			t.Errorf("Allow = %v, want %v", f.Allow, want)
+	for yamlText, want := range map[string][]string{
+		"github: {enabled: true, fast_ssh_keyscan: true}\n":                           slices.Concat(githubHosts, ssh),
+		"github: {enabled: true, allow: [actions_storage]}\n":                         slices.Concat(githubHosts, storage),
+		"github: {enabled: true, fast_ssh_keyscan: true, allow: [actions_storage]}\n": slices.Concat(githubHosts, ssh, storage),
+	} {
+		if f, _ := newGitHub(loadConfig(t, yamlText)); !slices.Equal(f.Allow, want) {
+			t.Errorf("%s: Allow = %v, want %v", yamlText, f.Allow, want)
 		}
 	}
 	if requests != 1 {
@@ -127,6 +138,7 @@ func TestGitHubSSHRules(t *testing.T) {
 	}
 
 	useMeta(meta.URL + "/missing\x00") // an invalid URL: the request fails
+	cfg := loadConfig(t, "github: {enabled: true, fast_ssh_keyscan: true, allow: [actions_storage]}\n")
 	if f, _ := newGitHub(cfg); !slices.Equal(f.Allow, githubHosts) {
 		t.Errorf("Allow when /meta can't be read = %v, want %v", f.Allow, githubHosts)
 	}

@@ -178,6 +178,7 @@ github:                         # make a GitHub token available (run --github)
   enabled: false
   secret_source: {command: gh auth token}   # defaults to the host's GH_TOKEN
   fast_ssh_keyscan: false       # let SSH to GitHub (ssh-keyscan, etc.) through without waiting
+  allow: [actions_storage]      # more GitHub hosts to allow, by group (see below)
 
 uv:
   vm_venv: true                 # uv in the VM keeps project virtualenvs in the VM (not .venv)
@@ -307,6 +308,8 @@ There are two kinds of servers, with tokens from different places:
 - A rule with only a domain (`github.com`, etc.) allows all ports. To restrict ports, write e.g. `github.com:tcp:443`
 - For connections matching a domain rule, microsandbox waits up to 5 seconds for the first bytes sent (to read the SNI or Host and check the connection is to an allowed domain). Protocols where the server speaks first, like SSH, wait 5 seconds on every connection. Connections allowed by an IP rule don't wait
 - `github.fast_ssh_keyscan` fetches GitHub's git IP ranges from its public `api.github.com/meta` and allows port 22 to them as IP rules placed before the domains. SSH to GitHub (`ssh-keyscan` during builds, etc.) then connects without waiting
+- `github.allow` adds groups of GitHub hosts. `actions_storage` allows the Actions artifact and log storage hosts (`productionresultssa*.blob.core.windows.net`, for `gh run download` and `gh run view --log`) listed in the same `api.github.com/meta`. They're Azure Blob Storage accounts, so msbx allows only GitHub's, not `*.blob.core.windows.net`
+- `github.allow` adds groups of GitHub hosts. `actions_storage` allows the Actions artifact and log storage hosts (`productionresultssa*.blob.core.windows.net`, for `gh run download` and `gh run view --log`) listed in the same `api.github.com/meta`. They're Azure Blob Storage accounts, so msbx allows only GitHub's, not `*.blob.core.windows.net`
 
 ### Docker in the VM
 

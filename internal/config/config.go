@@ -83,6 +83,7 @@ type GitHubConfig struct {
 	Enabled        bool          `yaml:"enabled"`
 	SecretSource   secret.Source `yaml:"secret_source"`
 	FastSSHKeyscan bool          `yaml:"fast_ssh_keyscan"`
+	Allow          []string      `yaml:"allow"`
 }
 
 func Path() string {

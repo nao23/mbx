@@ -3,6 +3,7 @@ package feature
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -28,17 +29,29 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 	if g.FastSSHKeyscan {
 		f.Allow = append(f.Allow, githubSSHRules()...)
 	}
+	for _, group := range g.Allow {
+		switch group {
+		case "actions_storage":
+			f.Allow = append(f.Allow, githubActionsStorage()...)
+		default:
+			return nil, fmt.Errorf("github.allow: unknown group %q (known: actions_storage)", group)
+		}
+	}
 	return f, nil
 }
 
-// githubMetaURL lists GitHub's IP ranges. It needs no auth (60 requests an hour per IP). A variable for tests
+// githubMetaURL lists GitHub's hosts and IP ranges. It needs no auth (60 requests an hour per IP). A variable
+// for tests
 var githubMetaURL = "https://api.github.com/meta"
 
 // githubMeta fetches /meta once per process, as features are built more than once per run
 var githubMeta = sync.OnceValue(fetchGitHubMeta)
 
 type gitHubMeta struct {
-	Git []string `json:"git"`
+	Git     []string `json:"git"`
+	Domains struct {
+		Actions []string `json:"actions"`
+	} `json:"domains"`
 }
 
 func fetchGitHubMeta() *gitHubMeta {
@@ -70,4 +83,21 @@ func githubSSHRules() []string {
 		}
 	}
 	return rules
+}
+
+// githubActionsStorage returns the Actions artifact and log storage hosts (gh run download, gh run view --log).
+// They're Azure Blob Storage accounts, so only GitHub's are allowed, not *.blob.core.windows.net. The rest of
+// /meta's actions domains are for runners, and mostly under *.githubusercontent.com already
+func githubActionsStorage() []string {
+	meta := githubMeta()
+	if meta == nil {
+		return nil
+	}
+	var hosts []string
+	for _, h := range meta.Domains.Actions {
+		if strings.HasPrefix(h, "productionresultssa") {
+			hosts = append(hosts, h)
+		}
+	}
+	return hosts
 }

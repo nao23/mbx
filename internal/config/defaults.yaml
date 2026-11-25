@@ -71,6 +71,10 @@ github:
   # Allow port 22 by GitHub's IP ranges (from api.github.com/meta) so SSH such as ssh-keyscan connects
   # without microsandbox's 5s wait on domain rules
   fast_ssh_keyscan: false
+  # More GitHub hosts to allow, by group:
+  # - actions_storage: Actions artifact and log storage (from api.github.com/meta), for gh run download and
+  #   gh run view --log
+  allow: []
 
 # uv in the VM keeps a project's virtualenv in the VM (/root/.venvs/<project path>) instead of the
 # project's .venv, which is shared with the host and holds binaries for the host's OS
