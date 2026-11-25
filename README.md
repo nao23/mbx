@@ -17,7 +17,10 @@ The config is a single YAML file. microsandbox's own settings are passed to micr
 - [microsandbox](https://docs.microsandbox.dev) (`msb`; tested with the Homebrew install)
 - Go (to install)
 - Docker on the host (to build the default image; Lima etc. is fine)
-- Depending on the features you use: `gh` (for `github`, and to fetch GitHub's SSH IP ranges), `aws` (for `docker.ecr`)
+- Depending on the features you use:
+  - `gh`: for `github` (the default token source)
+  - `aws`: for `docker.ecr` (the default token source)
+  - `git`: for `git` (reading config)
 
 ## Installation
 
@@ -70,7 +73,17 @@ microsandbox_config:
   image: my-sandbox:latest
 ```
 
-The image needs what the agent and the enabled features run: `claude` for the claude agent, and for example `dockerd` and `dnsmasq` for `docker`, the QEMU binfmt entries for `docker.emulation`, `uv` for `uv`, `socat` for MCP servers. The built-in [`Dockerfile`](internal/sandbox/Dockerfile) is a starting point. msbx doesn't rebuild your image, so run the two commands again to update it.
+The image needs what the agent and the enabled features run (Ubuntu package names in parentheses):
+
+- `claude` agent: `claude`
+- `docker`: `dockerd` and the docker CLI (`docker.io`), `iptables`, `dnsmasq` (`dnsmasq-base`)
+- `docker.emulation`: QEMU user mode with its binfmt entries (`qemu-user`, `qemu-user-binfmt`)
+- `docker.ecr`: what `docker` needs
+- `github`: `git`
+- `uv`: `uv`
+- MCP servers: `socat`
+
+The built-in [`Dockerfile`](internal/sandbox/Dockerfile) is a starting point. msbx doesn't rebuild your image, so run the two commands again to update it.
 
 ## Usage
 
@@ -80,13 +93,13 @@ msbx run claude -- -p "..."      # pass arguments to claude
 msbx run shell                   # start a shell (bash by default)
 msbx run shell -- make test      # start any command
 msbx run --keep                  # keep the sandbox after exit
-msbx run --dry-run               # only show the steps (runs nothing)
+msbx run --dry-run               # only show the steps (runs nothing, fetches no secrets)
 ```
 
 | Command | Description |
 |---|---|
 | `msbx run [claude\|shell] [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
-| `msbx ls` | List the sandboxes msbx created (name, status, agent, workspace, creation time). They're told apart by the labels put on them at creation (`msbx=1`, etc.), so ones named with `--name` show up too |
+| `msbx ls` | List the sandboxes msbx created |
 | `msbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
 | `msbx rm NAME...` | Remove sandboxes. Session history shared with the host is kept |
 | `msbx rebuild` | Rebuild the default image (`msbx-default:latest`). Use it to update Claude Code |
@@ -96,18 +109,6 @@ msbx run --dry-run               # only show the steps (runs nothing)
 | `msbx completion zsh\|bash\|fish` | Print a shell completion script |
 
 `msbx <command> --help` describes each command and its options.
-
-`run` options:
-
-| Option | Description |
-|---|---|
-| `--name NAME` | Sandbox name. Defaults to `claude-<dir name>` / `shell-<dir name>` |
-| `--keep` | Don't remove the sandbox on exit |
-| `--no-docker` | Don't use the Docker Engine in the VM |
-| `--ecr` / `--github` | Enable `docker.ecr` / `github` in the config (see below) |
-| `--dry-run` | Show the steps with their purpose and where they run (host / VM). Secret values aren't fetched either |
-
-Options for claude, or for the command run in the shell, go after `--` (`msbx run claude -- -p "..."`). Unknown options before `--` are treated as typos and rejected.
 
 Only the `run` that created a sandbox removes it on exit. If you connect to a running claude sandbox with `msbx run shell --name claude-<dir name>`, closing the shell leaves the claude sandbox running.
 
@@ -120,6 +121,9 @@ The config has a part passed to microsandbox as-is, and msbx's extensions.
 - **`microsandbox_config:`**: microsandbox's config file format. Passed to `msb create --conf` without being interpreted. See microsandbox's docs for its keys
 - **`microsandbox_flags:`**: things the config file format can't express (`--root-disk`, `--max-memory`, `--cpu-placement`, etc.), passed as-is as `msb create` flags
 - **Everything else**: msbx's extensions
+
+<details>
+<summary>Example</summary>
 
 ```yaml
 version: 1
@@ -195,6 +199,8 @@ projects:                       # overrides per working directory
     microsandbox_config:
       memory: 8G
 ```
+
+</details>
 
 ### Layering
 
@@ -276,29 +282,9 @@ There are two kinds of servers, with tokens from different places:
 - **`mcp_servers`: msbx's own login.** Log in once with `msbx mcp login example`. msbx finds the server's OAuth authorization server as MCP clients do (its protected resource metadata, then the authorization server's metadata), registers itself as a client by dynamic client registration unless `client_id` is set, and opens the browser to authorize, with PKCE. The redirect goes to `http://localhost:<callback_port>/callback` (a random port by default; servers whose `client_id` was registered with a fixed redirect need that port). The login is saved in the keychain under service `msbx-mcp-gateway`: account `<server>` holds the login (url, client, expiry), and `<server>:access` and `<server>:refresh` the tokens. The gateway refreshes them when they expire. Changing `url` needs a new login
 - **`claude_ai_connectors`: the host claude's claude.ai token.** claude.ai connectors can only be used with the claude.ai login, so the gateway reads the host claude's token from the keychain (`Claude Code-credentials`) only for these. The gateway doesn't refresh it, so when it expires, use the host's claude once (`msbx mcp` shows expiry). Connectors get the same names in the VM as on the host (`claude_ai_Slack`), so tool names (`mcp__claude_ai_Slack__...`) and permission settings in `settings.json` match the host's. Tools blocked on claude.ai are removed from the list by the gateway, and calls to them are refused
 
-How the gateway works:
+`msbx run` starts the gateway when needed. It reaches each sandbox through a unix socket of its own rather than the network, so the VM holds no credentials and other sandboxes can't use its servers. A custom image needs `socat` for MCP servers.
 
-```
-claude in the VM ──http://127.0.0.1:<port>/<server>──▶ socat in the VM
-  ──vsock──▶ the sandbox's unix socket on the host ──▶ MCP gateway ──HTTPS, with the token──▶ MCP server
-```
-
-- The gateway doesn't listen on the network. `msbx run` checks the logins, registers the sandbox, and starts the gateway if it isn't running; the gateway then opens a unix socket for the sandbox (`s/<id>.sock`, readable only by you), and msb exposes it to that sandbox only, at a vsock port (`--vsock`). The socket a request comes in on tells the gateway which sandbox sent it, so the VM holds no key or token, and other sandboxes, other processes on the host and web pages can't reach it
-- socat in the VM, started by the setup script, relays `127.0.0.1:<port>` (`mcp_gateway.port`) to the vsock port, and claude in the VM gets each server as `http://127.0.0.1:<port>/<server>`. Any process in the VM can use it, for the servers given for that sandbox only
-- There's one gateway, shared by all sandboxes. It opens and closes the sockets as sandboxes are registered and removed. Reconnecting to a sandbox starts the gateway again if it has stopped (e.g. after a reboot)
-- A custom image needs `socat` for MCP servers
-
-| Command | Description |
-|---|---|
-| `msbx mcp status` | For the servers in `claude.mcp_servers` and `claude.claude_ai_connectors`: the login state and expiry, where the definition came from, and where the credentials are kept (the default for `msbx mcp`) |
-| `msbx mcp login SERVER` | Log in to a server in `claude.mcp_servers` in the browser. Its `callback_port` must be free during the login |
-| `msbx mcp logout SERVER` | Remove msbx's login to the server from the keychain |
-| `msbx mcp-gw start` | Start the gateway in the background (does nothing if it's running) |
-| `msbx mcp-gw stop` | Stop the gateway |
-| `msbx mcp-gw restart` | Restart it. Use after changing tool permission settings on claude.ai, after logging in to a server at a new url, or after updating msbx |
-| `msbx mcp-gw status` | Whether it's running, and the registered sandboxes with their servers and sockets (the default for `msbx mcp-gw`) |
-
-The gateway's state lives in `~/.local/state/msbx/mcp-gateway/` (`gateway.pid`, `gateway.log`, `sandboxes/<sandbox name>.json`, `s/<id>.sock`). The gateway doesn't stop on its own.
+`msbx mcp` shows the logins and their expiry. Run `msbx mcp-gw restart` after changing a connector's tool permissions on claude.ai, logging in to a server at a new url, or updating msbx.
 
 ## How it works
 
