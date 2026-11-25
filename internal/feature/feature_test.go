@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"mvdan.cc/sh/v3/syntax"
@@ -82,38 +83,52 @@ func TestDocker(t *testing.T) {
 	}
 }
 
-// github sends GH_TOKEN (from the host's GH_TOKEN) to github.com (git) and api.github.com (gh), and adds IP rules only
-// with fast_ssh_keyscan
+var githubHosts = []string{"codeload.github.com", "*.githubusercontent.com", "ghcr.io"}
+
+// github sends GH_TOKEN (from the host's GH_TOKEN) to github.com (git) and api.github.com (gh), and allows
+// only its fixed hosts without fast_ssh_keyscan
 func TestGitHub(t *testing.T) {
 	f, _ := newGitHub(loadConfig(t, "github: {enabled: true}\n"))
 	if f.Secret.Env != "GH_TOKEN" || !slices.Equal(f.Secret.Hosts, []string{"github.com", "api.github.com"}) ||
 		f.Secret.Source.Env != "GH_TOKEN" {
 		t.Errorf("Secret = %+v", f.Secret)
 	}
-	if f.IPRules != nil {
-		t.Error("IPRules set without fast_ssh_keyscan")
-	}
-	if f, _ := newGitHub(loadConfig(t, "github: {enabled: true, fast_ssh_keyscan: true}\n")); f.IPRules == nil {
-		t.Error("IPRules not set with fast_ssh_keyscan")
+	if !slices.Equal(f.Allow, githubHosts) {
+		t.Errorf("Allow = %v, want %v", f.Allow, githubHosts)
 	}
 }
 
-// fast_ssh_keyscan allows port 22 to GitHub's IPv4 git ranges from /meta, and nothing if it can't be read
+// fast_ssh_keyscan also allows port 22 to GitHub's IPv4 git ranges from /meta, fetched once per process, and
+// nothing more if it can't be read
 func TestGitHubSSHRules(t *testing.T) {
+	requests := 0
 	meta := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
 		w.Write([]byte(`{"git": ["192.30.252.0/22", "2a0a:a440::/29", "140.82.112.0/20"], "web": ["1.2.3.4/32"]}`))
 	}))
 	defer meta.Close()
-	orig := githubMetaURL
-	t.Cleanup(func() { githubMetaURL = orig })
-
-	githubMetaURL = meta.URL
-	if got, want := githubSSHRules(), []string{"192.30.252.0/22:tcp:22", "140.82.112.0/20:tcp:22"}; !slices.Equal(got, want) {
-		t.Errorf("githubSSHRules = %v, want %v", got, want)
+	origURL, origMeta := githubMetaURL, githubMeta
+	t.Cleanup(func() { githubMetaURL, githubMeta = origURL, origMeta })
+	useMeta := func(url string) {
+		githubMetaURL = url
+		githubMeta = sync.OnceValue(fetchGitHubMeta)
 	}
-	githubMetaURL = meta.URL + "/missing\x00" // an invalid URL: the request fails
-	if got := githubSSHRules(); got != nil {
-		t.Errorf("githubSSHRules when /meta can't be read = %v, want none", got)
+	cfg := loadConfig(t, "github: {enabled: true, fast_ssh_keyscan: true}\n")
+
+	useMeta(meta.URL)
+	want := append(slices.Clone(githubHosts), "192.30.252.0/22:tcp:22", "140.82.112.0/20:tcp:22")
+	for range 2 {
+		if f, _ := newGitHub(cfg); !slices.Equal(f.Allow, want) {
+			t.Errorf("Allow = %v, want %v", f.Allow, want)
+		}
+	}
+	if requests != 1 {
+		t.Errorf("/meta fetched %d times, want once", requests)
+	}
+
+	useMeta(meta.URL + "/missing\x00") // an invalid URL: the request fails
+	if f, _ := newGitHub(cfg); !slices.Equal(f.Allow, githubHosts) {
+		t.Errorf("Allow when /meta can't be read = %v, want %v", f.Allow, githubHosts)
 	}
 }
 

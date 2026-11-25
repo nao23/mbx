@@ -366,6 +366,23 @@ func TestCollapseRules(t *testing.T) {
 	}
 }
 
+// Rules by IP or CIDR (with or without a port) go before the domains; domains, with ports or not, don't
+func TestIsIPRule(t *testing.T) {
+	for rule, want := range map[string]bool{
+		"140.82.112.0/20:tcp:22":  true,
+		"10.0.0.0/8":              true,
+		"192.0.2.1":               true,
+		"github.com":              false,
+		"github.com:tcp:443":      false,
+		"*.githubusercontent.com": false,
+		"host:tcp:41837":          false,
+	} {
+		if got := isIPRule(rule); got != want {
+			t.Errorf("isIPRule(%q) = %v, want %v", rule, got, want)
+		}
+	}
+}
+
 // The default image in defaults.yaml is the one msbx builds
 func TestDefaultImage(t *testing.T) {
 	if got := loadConfig(t, "version: 1\n", "/work").Image(); got != DefaultImage {

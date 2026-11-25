@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"fmt"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"slices"
@@ -119,13 +120,22 @@ func buildPlan(cfg *config.Config, workspace, name string, gateway *mcpgateway.R
 			}
 		}
 		for _, h := range f.Allow {
-			hosts = append(hosts, allowHost{name: h})
-		}
-		if f.IPRules != nil {
-			ipRules = append(ipRules, f.IPRules()...)
+			if isIPRule(h) {
+				ipRules = append(ipRules, h)
+			} else {
+				hosts = append(hosts, allowHost{name: h})
+			}
 		}
 	}
 	return plan{conf: conf, net: buildNetwork(cfg, hosts, ipRules), flags: flags, ipRules: ipRules}
+}
+
+// isIPRule reports whether an allow rule is by IP (e.g. 140.82.112.0/20:tcp:22), not by domain
+func isIPRule(rule string) bool {
+	addr, _, _ := strings.Cut(rule, ":")
+	_, prefixErr := netip.ParsePrefix(addr)
+	_, addrErr := netip.ParseAddr(addr)
+	return prefixErr == nil || addrErr == nil
 }
 
 // collapseRules shows the given allow rules (such as GitHub's 100+ SSH IP ranges) as a one-line count.

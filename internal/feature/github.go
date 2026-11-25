@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nao23/msbx/internal/config"
@@ -25,7 +26,7 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 		Setup:  &Setup{"Rewrite git's GitHub SSH URLs to HTTPS with $GH_TOKEN (a placeholder, swapped on send)", githubScript},
 	}
 	if g.FastSSHKeyscan {
-		f.IPRules = githubSSHRules
+		f.Allow = append(f.Allow, githubSSHRules()...)
 	}
 	return f, nil
 }
@@ -33,20 +34,33 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 // githubMetaURL lists GitHub's IP ranges. It needs no auth (60 requests an hour per IP). A variable for tests
 var githubMetaURL = "https://api.github.com/meta"
 
-// githubSSHRules allows SSH to GitHub's git IP ranges (IPv4 only). microsandbox waits up to 5s on a connection
-// matching a domain rule to read its TLS SNI, which stalls clients that wait for the server first, like
-// ssh-keyscan. Without the ranges, SSH still works, just with the wait
-func githubSSHRules() []string {
+// githubMeta fetches /meta once per process, as features are built more than once per run
+var githubMeta = sync.OnceValue(fetchGitHubMeta)
+
+type gitHubMeta struct {
+	Git []string `json:"git"`
+}
+
+func fetchGitHubMeta() *gitHubMeta {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(githubMetaURL)
 	if err != nil {
 		return nil
 	}
 	defer resp.Body.Close()
-	var meta struct {
-		Git []string `json:"git"`
-	}
+	var meta gitHubMeta
 	if resp.StatusCode != http.StatusOK || json.NewDecoder(resp.Body).Decode(&meta) != nil {
+		return nil
+	}
+	return &meta
+}
+
+// githubSSHRules allows SSH to GitHub's git IP ranges (IPv4 only). microsandbox waits up to 5s on a connection
+// matching a domain rule to read its TLS SNI, which stalls clients that wait for the server first, like
+// ssh-keyscan. Without the ranges, SSH still works, just with the wait
+func githubSSHRules() []string {
+	meta := githubMeta()
+	if meta == nil {
 		return nil
 	}
 	var rules []string
