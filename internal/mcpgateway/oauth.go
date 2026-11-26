@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -153,7 +154,13 @@ func Logout(name string) error {
 }
 
 // A variable so tests can follow the URL instead
-var openBrowser = func(u string) error { return exec.Command("open", u).Run() }
+var openBrowser = func(u string) error {
+	opener := "xdg-open"
+	if runtime.GOOS == "darwin" {
+		opener = "open"
+	}
+	return exec.Command(opener, u).Run()
+}
 
 // authServer is the authorization server metadata (RFC 8414).
 type authServer struct {
