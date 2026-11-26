@@ -35,7 +35,7 @@ Put these files in the config dir `~/.config/mbx/`:
 |---|---|
 | `config.yaml` | The config (see below) |
 | `<name>.yaml` | (Optional) Configs for some directories, used there instead of `config.yaml` (see below) |
-| `sandbox-prompt.md` | (Optional) Notes appended to the system prompt given to Claude in the VM. mbx always passes a description of the VM environment ([the built-in prompt](internal/agent/sandbox-prompt.md)) and appends the file named in `claude.extra_system_prompt` after it |
+| `sandbox-prompt.md` | (Optional) Notes appended to [the built-in prompt](internal/agent/sandbox-prompt.md) given to Claude in the VM, named in `claude.extra_system_prompt` |
 
 Issue a long-lived Claude Code token with `claude setup-token`. By default mbx reads it from the host's `CLAUDE_CODE_OAUTH_TOKEN` environment variable:
 
@@ -55,17 +55,14 @@ claude:
   secret_source: {keyring: claude-microsandbox-token}
 ```
 
-By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it automatically when it's missing, and rebuilds it when an mbx update has changed the built-in `Dockerfile` (detected by a hash recorded in an image label). The image is built with the host's Docker and loaded into microsandbox. Claude Code is the latest version at build time, so to update it, rebuild with `mbx build --default -- --no-cache`.
-
-If `microsandbox_config.image` names another image (`ubuntu:24.04`, `ghcr.io/...`, etc.), mbx doesn't build anything; microsandbox pulls it from its registry. mbx features (Docker, the uv wrapper, etc.) don't work if the image lacks what they rely on.
+By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it when it's missing or outdated. To update Claude Code in it, run `mbx build --default -- --no-cache`.
 
 ### Using your own image
 
-Write a Dockerfile, and build it with `mbx build`: like `docker build`, but it also loads the image into microsandbox (`--dry-run` shows the commands). Arguments after `--` go to `docker build`.
+Write a Dockerfile, and build it with `mbx build`: like `docker build`, but it also loads the image into microsandbox.
 
 ```sh
-mbx build -t my-sandbox:latest .                      # ./Dockerfile
-mbx build -t my-sandbox:latest -f my.Dockerfile ctx   # another Dockerfile and context
+mbx build -t my-sandbox:latest .
 ```
 
 ```yaml
@@ -78,12 +75,11 @@ The image needs what the agent and the enabled features run (Ubuntu package name
 - `claude` agent: `claude`
 - `docker`: `dockerd` and the docker CLI (`docker.io`), `iptables`, `dnsmasq` (`dnsmasq-base`)
 - `docker.emulation`: QEMU user mode with its binfmt entries (`qemu-user`, `qemu-user-binfmt`)
-- `docker.ecr`: what `docker` needs
 - `github`: `git`, and `gh` to use the GitHub CLI
 - `uv`: `uv`
 - MCP servers: `socat`
 
-The built-in [`Dockerfile`](internal/sandbox/Dockerfile) is a starting point. mbx doesn't rebuild your image, so run `mbx build` again to update it.
+An image named in `microsandbox_config.image` that mbx didn't build is pulled by microsandbox from its registry.
 
 ## Usage
 
@@ -100,20 +96,18 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 
 | Command | Description |
 |---|---|
-| `mbx config edit [--new]` | Make or edit a config file from a menu listing its settings and values: the one the current directory uses, or with `--new` a new one for it starting from `config.yaml`. Pick a setting to change it, and Save to write the changed ones after a confirmation, keeping the file's comments |
+| `mbx config edit [--new]` | Make or edit a config file from a menu of its settings |
 | `mbx run claude\|shell [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
 | `mbx ls` | List the sandboxes mbx created |
 | `mbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
-| `mbx rm NAME...` | Remove sandboxes. Session history shared with the host is kept |
-| `mbx secret rotate [OPTIONS]` | Fetch the current directory's sandboxes' secrets again and swap in the new values, without a restart |
-| `mbx build -t IMAGE [-f DOCKERFILE] [CONTEXT]` | Build an image for the VMs with the host Docker and load it into microsandbox. `--default` builds the default image (`mbx-default:latest`) from the built-in Dockerfile; use it to update Claude Code |
-| `mbx mcp [status\|login\|logout]` | mbx's logins to MCP servers: their state and where the credentials are kept (see below) |
-| `mbx mcp-gw [status\|start\|stop\|restart]` | Manage the MCP gateway (see below) |
+| `mbx rm NAME...` | Remove sandboxes |
+| `mbx secret rotate [OPTIONS]` | Fetch the sandboxes' secrets again and swap in the new values, without a restart |
+| `mbx build -t IMAGE [-f DOCKERFILE] [CONTEXT]` | Build an image for the VMs and load it into microsandbox (`--default` for the default image) |
+| `mbx mcp [status\|login\|logout]` | mbx's logins to MCP servers |
+| `mbx mcp-gw [status\|start\|stop\|restart]` | Manage the MCP gateway |
 | `mbx completion zsh\|bash\|fish` | Print a shell completion script |
 
 `mbx <command> --help` describes each command and its options.
-
-Only the `run` that created a sandbox removes it on exit. If you connect to a running claude sandbox with `mbx run shell --name claude-<dir name>`, closing the shell leaves the claude sandbox running.
 
 ## Configuration
 
@@ -183,7 +177,7 @@ github:                         # make a GitHub token available (run --github)
   enabled: false
   secret_source: {command: gh auth token}   # defaults to the host's GH_TOKEN
   fast_ssh_keyscan: false       # let SSH to GitHub (ssh-keyscan, etc.) through without waiting
-  allow: [actions_storage]      # more GitHub hosts to allow, by group (see below)
+  allow: [actions_storage]      # more GitHub hosts to allow, by group (actions_storage: Actions artifacts and logs)
 
 uv:
   vm_venv: true                 # uv in the VM keeps project virtualenvs in the VM (not .venv)
@@ -211,24 +205,17 @@ github: {enabled: true}
 
 - The file whose `directories` has the working directory, or the deepest of its parents, is used. Elsewhere, `config.yaml` is used; it takes no `directories`
 - Only that one file is used. Config files aren't layered over each other, so a file has everything that differs from the defaults
-- A directory in two files is an error, so which file a directory uses is never in doubt
 - `--config FILE` uses that file instead, wherever it is
 
 ### Layering
 
-Layered in this order: defaults → the config file → command-line options.
-
-- Maps are merged key by key. Values and lists are replaced by the later one
-- Only `microsandbox_config.network.allow` is appended to instead of replaced
-- `secret_source` (and each entry of `secret_sources`) is replaced whole instead of merged key by key, so `keyring` and `command` don't get mixed
-
-`mbx run claude --show-config` shows the final config, and which file was used and why.
+Layered in this order: defaults → the config file → command-line options. Maps are merged key by key; values and lists are replaced, except `microsandbox_config.network.allow`, which is appended to. `mbx run claude --show-config` shows the result.
 
 ## Secrets
 
-All secret values are handled the same way. The value is fetched on the host and kept only in `msb`'s environment, and the VM gets a placeholder. When a program in the VM sends the placeholder, the proxy swaps in the real value, only for traffic to the allowed destination.
+All secret values are handled the same way. The value is fetched on the host, and the VM gets a placeholder. When a program in the VM sends the placeholder, the proxy swaps in the real value, only for traffic to the allowed destination.
 
-Where a value comes from is written the same way everywhere, in `secret_source` / `secret_sources`.
+Where a value comes from is written the same way everywhere, in `secret_source` / `secret_sources`:
 
 | Form | Source |
 |---|---|
@@ -236,39 +223,33 @@ Where a value comes from is written the same way everywhere, in `secret_source` 
 | `{command: CMD}` | The output of running CMD in a shell |
 | `{env: VAR}` | The host environment variable VAR |
 
-`mbx run` shows each secret as it fetches it (its name, source and destination), so a keyring dialog or a login prompt from a command shows what it's for. If fetching fails and mbx is running in a terminal, it asks for the value by hand: the input isn't echoed, is used for that run only, and an empty input aborts with the original error.
-
 ### Built-in (claude, ECR, GitHub)
 
-The environment variable in the VM and the destination are fixed; only the source can be changed with `secret_source`. The destination is automatically added to the allowlist and to the TLS interception targets.
+The environment variable in the VM and the destination are fixed; only the source can be changed with `secret_source`. The destination and the other hosts the feature needs are allowed automatically ([docs/network.md](docs/network.md)).
 
-| Setting | Environment variable in the VM → destination | What else it does |
-|---|---|---|
-| `claude` | `CLAUDE_CODE_OAUTH_TOKEN` → `api.anthropic.com` | Also allows `platform.claude.com` |
-| `docker.ecr` | `ECR_TOKEN` → `registry` | Also allows the S3 bucket holding image layers (`prod-<region>-starport-layer-bucket.s3.<region>.amazonaws.com`). Logs `docker` in the VM in to ECR |
-| `github` | `GH_TOKEN` → `github.com`, `api.github.com` | Lets `git` and `gh` in the VM use the token. Also allows `codeload.github.com`, `*.githubusercontent.com` and `ghcr.io`. Makes git in the VM rewrite `git@github.com:` / `ssh://git@github.com/` to HTTPS with the token |
-
-By default these tokens come from the host's environment variables of the same name (`GH_TOKEN`, `ECR_TOKEN`). To fetch them on each run instead, set e.g. `{command: gh auth token}` or `{command: aws ecr get-login-password --region <region>}`. To keep the VM from pushing to GitHub, give it a read-only fine-grained personal access token.
+| Setting | Environment variable in the VM → destination |
+|---|---|
+| `claude` | `CLAUDE_CODE_OAUTH_TOKEN` → `api.anthropic.com` |
+| `docker.ecr` | `ECR_TOKEN` → `registry` |
+| `github` | `GH_TOKEN` → `github.com`, `api.github.com` |
 
 ### Your own
 
-Put the name and destination in `microsandbox_config.secrets` (microsandbox's own format), and the source in `secret_sources`. microsandbox's format has no place for `keyring` and the like, hence the two places.
+Put the name and destination in `microsandbox_config.secrets` (microsandbox's own format), and the source in `secret_sources`:
 
 ```yaml
 microsandbox_config:
   secrets:
     MY_TOKEN:
-      allow: [api.example.com]    # destination (added to the allowlist and TLS interception targets automatically)
+      allow: [api.example.com]    # destination
 
 secret_sources:
   MY_TOKEN: {keyring: my-token}
 ```
 
-## MCP servers (the MCP gateway)
+## MCP servers
 
-claude in the VM can use remote MCP servers and claude.ai connectors. Tokens stay out of the VM: an MCP gateway running on the host (`mbx mcp-gw`) forwards requests with tokens kept in the host's keyring.
-
-Only remote (HTTP) servers are supported; stdio servers aren't. A stdio server in a repository's `.mcp.json` is started by claude in the VM itself, so it runs if the image has its runtime and the network allows what it needs.
+claude in the VM can use remote (HTTP) MCP servers and claude.ai connectors. Tokens stay out of the VM: an MCP gateway on the host (`mbx mcp-gw`, started by `mbx run` when needed) forwards the requests with the tokens.
 
 ```yaml
 claude:
@@ -276,26 +257,17 @@ claude:
   claude_ai_connectors: [Slack]    # claude.ai connectors (display names), with the host claude's token
 
 mcp_gateway:
-  port: 41837
   servers:                         # needed only for servers the host's claude doesn't have, or to override it
     sentry:
       url: https://mcp.example.com/mcp
       client_id: abc123            # for a server without dynamic client registration
       callback_port: 13579         # the redirect port registered for client_id
-      client_secret_source: {}     # for a confidential client_id (a secret source, as in secret_sources)
-      scope: ""                    # default: what the server asks for
 ```
 
-A server in `mcp_servers` is defined by its `mcp_gateway.servers` entry, with what the entry leaves out taken from the host claude's user-scope server of the same name (`mcpServers` in `~/.claude.json`, as added with `claude mcp add --scope user`): the `url`, and when the url is the same, `client_id` and `callback_port` (`oauth.clientId` and `oauth.callbackPort`). So a server the host's claude already has, like `example` above, needs no entry. Only the definition is read from there; the host claude's tokens aren't used.
+- **`mcp_servers`**: defined by `mcp_gateway.servers`, or else the host claude's user-scope server of the same name (`claude mcp add --scope user`). Log in once with `mbx mcp login <server>`; the gateway refreshes the tokens
+- **`claude_ai_connectors`**: use the host claude's claude.ai login. When it expires, use the host's claude once
 
-There are two kinds of servers, with tokens from different places:
-
-- **`mcp_servers`: mbx's own login.** Log in once with `mbx mcp login example`. mbx finds the server's OAuth authorization server as MCP clients do (its protected resource metadata, then the authorization server's metadata), registers itself as a client by dynamic client registration unless `client_id` is set, and opens the browser to authorize, with PKCE. The redirect goes to `http://localhost:<callback_port>/callback` (a random port by default; servers whose `client_id` was registered with a fixed redirect need that port). The login is saved in the keyring under service `mbx-mcp-gateway`: account `<server>` holds the login (url, client, expiry), and `<server>:access` and `<server>:refresh` the tokens. The gateway refreshes them when they expire. Changing `url` needs a new login
-- **`claude_ai_connectors`: the host claude's claude.ai token.** claude.ai connectors can only be used with the claude.ai login, so the gateway reads the host claude's token (from the keychain on macOS, `~/.claude/.credentials.json` on Linux) only for these. The gateway doesn't refresh it, so when it expires, use the host's claude once (`mbx mcp` shows expiry). Connectors get the same names in the VM as on the host (`claude_ai_Slack`), so tool names (`mcp__claude_ai_Slack__...`) and permission settings in `settings.json` match the host's. Tools blocked on claude.ai are removed from the list by the gateway, and calls to them are refused
-
-`mbx run` starts the gateway when needed. It reaches each sandbox through a unix socket of its own rather than the network, so the VM holds no credentials and other sandboxes can't use its servers. A custom image needs `socat` for MCP servers.
-
-`mbx mcp` shows the logins and their expiry. Run `mbx mcp-gw restart` after changing a connector's tool permissions on claude.ai, logging in to a server at a new url, or updating mbx.
+`mbx mcp` shows the logins and their expiry. See [docs/mcp-gateway.md](docs/mcp-gateway.md) for how the gateway works, server definitions and logins.
 
 ## How it works
 
@@ -315,14 +287,7 @@ There are two kinds of servers, with tokens from different places:
 
 ### Network
 
-- Traffic to domains not on the allowlist is blocked
-- TLS is intercepted (decrypted) only for secret destinations (`api.anthropic.com`, the ECR registry, `github.com`, etc.). Other allowed domains aren't intercepted (`tls.bypass`), as containers in the VM don't trust microsandbox's CA
-- microsandbox replaces lists whole when layering configs, so for `network` mbx adds its entries first and passes it as one config
-- A rule with only a domain (`github.com`, etc.) allows all ports. To restrict ports, write e.g. `github.com:tcp:443`
-- For connections matching a domain rule, microsandbox waits up to 5 seconds for the first bytes sent (to read the SNI or Host and check the connection is to an allowed domain). Protocols where the server speaks first, like SSH, wait 5 seconds on every connection. Connections allowed by an IP rule don't wait
-- `github.fast_ssh_keyscan` fetches GitHub's git IP ranges from its public `api.github.com/meta` and allows port 22 to them as IP rules placed before the domains. SSH to GitHub (`ssh-keyscan` during builds, etc.) then connects without waiting
-- `github.allow` adds groups of GitHub hosts. `actions_storage` allows the Actions artifact and log storage hosts (`productionresultssa*.blob.core.windows.net`, for `gh run download` and `gh run view --log`) listed in the same `api.github.com/meta`. They're Azure Blob Storage accounts, so mbx allows only GitHub's, not `*.blob.core.windows.net`
-- `github.allow` adds groups of GitHub hosts. `actions_storage` allows the Actions artifact and log storage hosts (`productionresultssa*.blob.core.windows.net`, for `gh run download` and `gh run view --log`) listed in the same `api.github.com/meta`. They're Azure Blob Storage accounts, so mbx allows only GitHub's, not `*.blob.core.windows.net`
+Traffic to domains not on the allowlist is blocked, and TLS is intercepted only for secret destinations. See [docs/network.md](docs/network.md) for the details and the hosts mbx adds.
 
 ### Docker in the VM
 
