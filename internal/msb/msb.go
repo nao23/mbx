@@ -194,6 +194,57 @@ func labels(args ...string) map[string]string {
 	return v.Config.Labels
 }
 
+// Secret is a secret in a sandbox's active config.
+type Secret struct {
+	Env   string
+	Hosts []string
+	// FromEnv: msb takes the value from its environment variable of the same name, where msbx puts the value
+	// it fetched from any secret_source (keychain, command, ...). False for a value written in the config
+	FromEnv bool
+}
+
+// Secrets returns the secrets in the sandbox's active config.
+func Secrets(name string) ([]Secret, error) {
+	out, err := exec.Command("msb", "inspect", name, "--format", "json").Output()
+	if err != nil {
+		return nil, err
+	}
+	return parseSecrets(out)
+}
+
+// parseSecrets reads the secrets from msb inspect's JSON.
+func parseSecrets(inspect []byte) ([]Secret, error) {
+	var v struct {
+		ActiveConfig struct {
+			Network struct {
+				Secrets struct {
+					Secrets []struct {
+						EnvVar       string              `json:"env_var"`
+						AllowedHosts []map[string]string `json:"allowed_hosts"` // {"exact": ...} or {"wildcard": ...}
+						Source       struct {
+							Kind string `json:"kind"`
+						} `json:"source"`
+					} `json:"secrets"`
+				} `json:"secrets"`
+			} `json:"network"`
+		} `json:"active_config"`
+	}
+	if err := json.Unmarshal(inspect, &v); err != nil {
+		return nil, err
+	}
+	var secrets []Secret
+	for _, s := range v.ActiveConfig.Network.Secrets.Secrets {
+		sec := Secret{Env: s.EnvVar, FromEnv: s.Source.Kind == "env"}
+		for _, h := range s.AllowedHosts {
+			for _, name := range h {
+				sec.Hosts = append(sec.Hosts, name)
+			}
+		}
+		secrets = append(secrets, sec)
+	}
+	return secrets, nil
+}
+
 type SandboxInfo struct {
 	Name      string `json:"name"`
 	Status    string `json:"status"`

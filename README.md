@@ -100,6 +100,7 @@ msbx run --show-config           # only show the merged config, with the options
 | `msbx ls` | List the sandboxes msbx created |
 | `msbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
 | `msbx rm NAME...` | Remove sandboxes. Session history shared with the host is kept |
+| `msbx secret rotate [OPTIONS]` | Fetch the current directory's sandboxes' secrets again and swap in the new values, without a restart |
 | `msbx rebuild` | Rebuild the default image (`msbx-default:latest`). Use it to update Claude Code |
 | `msbx mcp [status\|login\|logout]` | msbx's logins to MCP servers: their state and where the credentials are kept (see below) |
 | `msbx mcp-gw [status\|start\|stop\|restart]` | Manage the MCP gateway (see below) |

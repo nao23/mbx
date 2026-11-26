@@ -40,6 +40,7 @@ Config file: ~/.config/msbx/config.yaml (override with the MSBX_CONFIG env var)`
 		newLsCmd(),
 		newStopCmd(),
 		newRmCmd(),
+		newSecretCmd(),
 		newRebuildCmd(),
 		newMCPCmd(),
 		newMCPGatewayCmd(),
@@ -226,6 +227,42 @@ func newRmCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func newSecretCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "secret",
+		Short: "Manage a sandbox's secrets",
+		Args:  cobra.NoArgs,
+	}
+	var name string
+	var dryRun bool
+	rotate := &cobra.Command{
+		Use:   "rotate [flags]",
+		Short: "Fetch the sandboxes' secrets again and swap in the new values",
+		Long: `Fetch the values of the secrets of the current directory's sandboxes (or the one named with --name) again,
+from the sources in the config, and swap them in (running or not) without a restart. Each secret keeps its
+hosts; to add or remove secrets, recreate the sandbox.`,
+		Example: `  msbx secret rotate
+  msbx secret rotate --name shell-repo`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			cfg, err := config.Load(workspace)
+			if err != nil {
+				return err
+			}
+			return sandbox.RotateSecrets(cfg, workspace, name, dryRun)
+		},
+	}
+	fs := rotate.Flags()
+	fs.StringVar(&name, "name", "", "sandbox name (default: the current directory's sandboxes)")
+	fs.BoolVar(&dryRun, "dry-run", false, "print the commands it would run, without running anything (no secrets are fetched)")
+	cmd.AddCommand(rotate)
+	return cmd
 }
 
 func newRebuildCmd() *cobra.Command {

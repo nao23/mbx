@@ -15,6 +15,10 @@ import (
 //go:embed github.sh
 var githubScript string
 
+func githubSecret(cfg *config.Config) *Secret {
+	return &Secret{Env: "GH_TOKEN", Hosts: []string{"github.com", "api.github.com"}, Source: cfg.GitHub.SecretSource}
+}
+
 func newGitHub(cfg *config.Config) (*Feature, error) {
 	g := cfg.GitHub
 	if !g.Enabled {
@@ -22,7 +26,7 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 	}
 	f := &Feature{
 		Name:   "github",
-		Secret: &Secret{Env: "GH_TOKEN", Hosts: []string{"github.com", "api.github.com"}, Source: g.SecretSource},
+		Secret: githubSecret(cfg),
 		Allow:  []string{"codeload.github.com", "*.githubusercontent.com", "ghcr.io"},
 		Setup:  &Setup{"Rewrite git's GitHub SSH URLs to HTTPS with $GH_TOKEN (a placeholder, swapped on send)", githubScript},
 	}

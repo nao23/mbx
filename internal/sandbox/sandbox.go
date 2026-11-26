@@ -52,7 +52,7 @@ func (s *Sandbox) Run(args []string) (int, error) {
 			return 0, err
 		}
 	}
-	if err := resolveSecrets(r, cfg, features(cfg, s.workspace, nil)); err != nil {
+	if _, err := resolveSecrets(r, cfg, features(cfg, s.workspace, nil), func(string) bool { return true }); err != nil {
 		return 0, err
 	}
 

@@ -52,3 +52,12 @@ func Enabled(cfg *config.Config) ([]Feature, error) {
 	}
 	return out, nil
 }
+
+// AllSecrets returns the features' secrets with their sources in the config, whether or not the config
+// enables the features
+func AllSecrets(cfg *config.Config) []Feature {
+	return []Feature{
+		{Name: "docker.ecr", Secret: ecrSecret(cfg)},
+		{Name: "github", Secret: githubSecret(cfg)},
+	}
+}

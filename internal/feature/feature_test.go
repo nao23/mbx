@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -35,6 +36,32 @@ func loadConfig(t *testing.T, yamlText string) *config.Config {
 		t.Fatal(err)
 	}
 	return cfg
+}
+
+// AllSecrets returns the features' secrets with their sources even when the features are off, the same
+// secrets the features use when on
+func TestAllSecrets(t *testing.T) {
+	cfg := loadConfig(t, `
+		docker:
+		  ecr: {registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com}
+		github: {secret_source: {keychain: gh}}
+	`)
+	got := map[string]Secret{}
+	for _, f := range AllSecrets(cfg) {
+		got[f.Secret.Env] = *f.Secret
+	}
+	if s := got["GH_TOKEN"]; s.Source.Keychain != "gh" {
+		t.Errorf("GH_TOKEN = %+v", s)
+	}
+	if s := got["ECR_TOKEN"]; s.Source.Env != "ECR_TOKEN" {
+		t.Errorf("ECR_TOKEN = %+v", s)
+	}
+
+	cfg.GitHub.Enabled = true
+	f, _ := newGitHub(cfg)
+	if !reflect.DeepEqual(*f.Secret, got["GH_TOKEN"]) {
+		t.Errorf("github's secret = %+v, AllSecrets' = %+v", *f.Secret, got["GH_TOKEN"])
+	}
 }
 
 // Enabled returns the enabled features in order (secrets and setup steps), and none when all are off

@@ -13,6 +13,11 @@ import (
 //go:embed ecr.sh
 var ecrScript string
 
+func ecrSecret(cfg *config.Config) *Secret {
+	e := cfg.Docker.ECR
+	return &Secret{Env: "ECR_TOKEN", Hosts: []string{e.Registry}, Source: e.SecretSource}
+}
+
 func newECR(cfg *config.Config) (*Feature, error) {
 	e := cfg.Docker.ECR
 	if !e.Enabled {
@@ -30,7 +35,7 @@ func newECR(cfg *config.Config) (*Feature, error) {
 	region := ecrRegion(e.Registry)
 	f := &Feature{
 		Name:   "docker.ecr",
-		Secret: &Secret{Env: "ECR_TOKEN", Hosts: []string{e.Registry}, Source: e.SecretSource},
+		Secret: ecrSecret(cfg),
 		Setup: &Setup{
 			"Log in to ECR ($ECR_TOKEN is a placeholder, swapped for the real value on send)",
 			"ECR_REGISTRY=" + shell.Quote(e.Registry) + "\n" + ecrScript,

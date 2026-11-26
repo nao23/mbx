@@ -21,6 +21,11 @@ type Agent interface {
 	Command(r *msb.Runner, args []string) (command []string, shown string)
 }
 
+// AllSecrets returns the agents' secrets with their sources in the config, whichever agent the config sets
+func AllSecrets(cfg *config.Config) []feature.Feature {
+	return []feature.Feature{{Name: "claude", Secret: claudeSecret(cfg)}}
+}
+
 func New(cfg *config.Config) (Agent, error) {
 	switch cfg.Agent {
 	case "claude":

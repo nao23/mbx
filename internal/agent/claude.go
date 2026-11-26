@@ -32,10 +32,14 @@ func newClaude(cfg *config.Config) *claude {
 	return &claude{cfg: cfg, telemetry: telemetryHosts(cfg)}
 }
 
+func claudeSecret(cfg *config.Config) *feature.Secret {
+	return &feature.Secret{Env: "CLAUDE_CODE_OAUTH_TOKEN", Hosts: []string{"api.anthropic.com"}, Source: cfg.Claude.SecretSource}
+}
+
 func (c *claude) Feature(workspace string, gateway *mcpgateway.Registration) feature.Feature {
 	f := feature.Feature{
 		Name:    "claude",
-		Secret:  &feature.Secret{Env: "CLAUDE_CODE_OAUTH_TOKEN", Hosts: []string{"api.anthropic.com"}, Source: c.cfg.Claude.SecretSource},
+		Secret:  claudeSecret(c.cfg),
 		Allow:   append([]string{"platform.claude.com"}, c.telemetry...),
 		Flags:   c.flags(workspace),
 		Patches: c.patches(workspace, gateway),
