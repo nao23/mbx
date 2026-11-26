@@ -81,6 +81,15 @@ type ECRConfig struct {
 	SecretSource secret.Source `yaml:"secret_source"`
 }
 
+// ECRRegion returns the region of <account>.dkr.ecr.<region>.amazonaws.com, or ""
+func ECRRegion(registry string) string {
+	parts := strings.Split(registry, ".")
+	if len(parts) < 4 || parts[1] != "dkr" || parts[2] != "ecr" {
+		return ""
+	}
+	return parts[3]
+}
+
 type GitHubConfig struct {
 	Enabled        bool          `yaml:"enabled"`
 	SecretSource   secret.Source `yaml:"secret_source"`
@@ -125,6 +134,26 @@ func HostClaudeDir() string {
 func HostClaudeJSON() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".claude.json")
+}
+
+// HostMCPServers returns the names of the host claude's user-scope MCP servers with a url (stdio servers
+// aren't supported), sorted.
+func HostMCPServers() []string {
+	var host struct {
+		MCPServers map[string]struct {
+			URL string `json:"url"`
+		} `json:"mcpServers"`
+	}
+	var names []string
+	if data, err := os.ReadFile(HostClaudeJSON()); err == nil && json.Unmarshal(data, &host) == nil {
+		for name, s := range host.MCPServers {
+			if s.URL != "" {
+				names = append(names, name)
+			}
+		}
+	}
+	slices.Sort(names)
+	return names
 }
 
 // MCPServer returns the mcp_gateway.servers entry, filled in from the host claude's server of the same name

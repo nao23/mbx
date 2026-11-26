@@ -27,6 +27,8 @@ go install github.com/nao23/msbx@latest
 
 ## Setup
 
+`msbx config edit` makes the config file from a menu of the agent, the token sources and the features (or write it by hand, see below). Run it again to edit the file the current directory uses, or run `msbx config edit --new` in a directory that needs its own config to make one for it.
+
 Put these files in the config dir `~/.config/msbx/`:
 
 | File | Contents |
@@ -98,6 +100,7 @@ msbx run --config ~/work.yaml    # use this config file (any command takes --con
 
 | Command | Description |
 |---|---|
+| `msbx config edit [--new]` | Make or edit a config file from a menu listing its settings and values: the one the current directory uses, or with `--new` a new one for it starting from `config.yaml`. Pick a setting to change it, and Save to write the changed ones after a confirmation, keeping the file's comments |
 | `msbx run [claude\|shell] [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
 | `msbx ls` | List the sandboxes msbx created |
 | `msbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |

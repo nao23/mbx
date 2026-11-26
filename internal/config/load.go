@@ -23,27 +23,31 @@ func replaced(path, key string) bool {
 }
 
 // Load layers one config file over the defaults: file if not empty, else the one for the workspace (see
-// choose). Config files aren't layered over each other.
+// Choose). Config files aren't layered over each other.
 func Load(workspace, file string) (*Config, error) {
 	path, why := file, "given with --config"
 	if file == "" {
+		var matched string
 		var err error
-		if path, why, err = choose(workspace); err != nil {
+		if path, matched, err = Choose(workspace); err != nil {
 			return nil, err
+		}
+		why = "its directories has " + matched
+		if matched == "" {
+			why = "no file's directories has " + workspace
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				why += ", and it's missing: the defaults alone"
+			}
 		}
 	} else if _, err := os.Stat(file); err != nil {
 		return nil, err
 	}
 
-	merged, err := parseYAML(defaultsYAML)
-	if err != nil {
-		return nil, fmt.Errorf("defaults: %w", err)
-	}
 	m, err := readConfigFile(path)
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := decode(merge(merged, m, ""))
+	cfg, err := layer(m)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
@@ -52,10 +56,27 @@ func Load(workspace, file string) (*Config, error) {
 	return cfg, nil
 }
 
-// choose picks the config file for the workspace from the config dir's *.yaml: the one whose directories
-// has the workspace or the deepest of its parents, else config.yaml, which has no directories. A directory
-// in two files is an error, whichever the workspace
-func choose(workspace string) (path, why string, err error) {
+// Parse layers a config file's text over the defaults, as Load does.
+func Parse(data []byte) (*Config, error) {
+	m, err := parseYAML(data)
+	if err != nil {
+		return nil, err
+	}
+	return layer(m)
+}
+
+func layer(m map[string]any) (*Config, error) {
+	merged, err := parseYAML(defaultsYAML)
+	if err != nil {
+		return nil, fmt.Errorf("defaults: %w", err)
+	}
+	return decode(merge(merged, m, ""))
+}
+
+// Choose picks the config file for the workspace from the config dir's *.yaml: the one whose directories
+// has the workspace or the deepest of its parents (matched), else config.yaml, which has no directories
+// (matched is empty). A directory in two files is an error, whichever the workspace
+func Choose(workspace string) (path, matched string, err error) {
 	dir := Dir()
 	files, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
 	if err != nil {
@@ -91,14 +112,9 @@ func choose(workspace string) (path, why string, err error) {
 		}
 	}
 	if deepest != "" {
-		return listedIn[deepest], "its directories has " + deepest, nil
+		return listedIn[deepest], deepest, nil
 	}
-	path = filepath.Join(dir, DefaultFile)
-	why = "no file's directories has " + workspace
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		why += ", and it's missing: the defaults alone"
-	}
-	return path, why, nil
+	return filepath.Join(dir, DefaultFile), "", nil
 }
 
 // readConfigFile reads a config file. A missing one is empty

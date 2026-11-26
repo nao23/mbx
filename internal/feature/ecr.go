@@ -3,7 +3,6 @@ package feature
 import (
 	_ "embed"
 	"errors"
-	"strings"
 
 	"github.com/nao23/msbx/internal/config"
 	"github.com/nao23/msbx/internal/secret"
@@ -32,7 +31,7 @@ func newECR(cfg *config.Config) (*Feature, error) {
 	if e.SecretSource == (secret.Source{}) {
 		return nil, errors.New("docker.ecr.secret_source is not set")
 	}
-	region := ecrRegion(e.Registry)
+	region := config.ECRRegion(e.Registry)
 	f := &Feature{
 		Name:   "docker.ecr",
 		Secret: ecrSecret(cfg),
@@ -46,13 +45,4 @@ func newECR(cfg *config.Config) (*Feature, error) {
 		f.Allow = []string{"prod-" + region + "-starport-layer-bucket.s3." + region + ".amazonaws.com"}
 	}
 	return f, nil
-}
-
-// ecrRegion returns the region of <account>.dkr.ecr.<region>.amazonaws.com, or ""
-func ecrRegion(registry string) string {
-	parts := strings.Split(registry, ".")
-	if len(parts) < 4 || parts[1] != "dkr" || parts[2] != "ecr" {
-		return ""
-	}
-	return parts[3]
 }

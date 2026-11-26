@@ -38,6 +38,7 @@ has the current directory, else config.yaml. --config gives one instead.`,
 		return fmt.Errorf("%w (see %s --help)", err, cmd.CommandPath())
 	})
 	root.AddCommand(
+		newConfigCmd(),
 		newRunCmd(),
 		newLsCmd(),
 		newStopCmd(),
@@ -52,6 +53,37 @@ has the current directory, else config.yaml. --config gives one instead.`,
 
 // configFile is --config: the config file to use instead of choosing one by directory
 var configFile string
+
+func newConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "Manage the config files",
+		Args:  cobra.NoArgs,
+	}
+	var newFile bool
+	edit := &cobra.Command{
+		Use:   "edit",
+		Short: "Make or edit a config file from a menu of its settings",
+		Long: `Make or edit a config file from a menu of its settings: the current directory's config file (config.yaml,
+made if missing), or with --new a new one for the current directory starting from config.yaml. The menu
+lists the settings with their values; pick one to change it (Esc goes back), and Save to write the changed
+ones after a confirmation, keeping the file's other keys and comments.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if configFile != "" {
+				return errors.New("config edit picks the file itself; run it without --config")
+			}
+			workspace, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			return config.Edit(workspace, newFile)
+		},
+	}
+	edit.Flags().BoolVar(&newFile, "new", false, "make a config file for the current directory, starting from config.yaml")
+	cmd.AddCommand(edit)
+	return cmd
+}
 
 type runOptions struct {
 	name, agent                                     string
