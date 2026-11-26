@@ -23,7 +23,7 @@ func newECR(cfg *config.Config) (*Feature, error) {
 		return nil, nil
 	}
 	if !cfg.Docker.Enabled {
-		return nil, errors.New("docker.ecr requires docker (remove --no-docker)")
+		return nil, errors.New("docker.ecr requires docker (docker.enabled)")
 	}
 	if e.Registry == "" {
 		return nil, errors.New("docker.ecr.registry is not set")

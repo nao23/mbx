@@ -163,7 +163,7 @@ docker:
   enabled: true
   disk: 20G                     # disk for Docker (removed with the sandbox)
   emulation: true               # run other architectures under QEMU
-  ecr:                          # log docker in the VM in to ECR (run --ecr)
+  ecr:                          # log docker in the VM in to ECR
     enabled: false
     registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
     secret_source:              # defaults to the host's ECR_TOKEN
@@ -173,7 +173,7 @@ git:                            # copy the host's git settings when the sandbox 
   host_user: true               # [user] of the global gitconfig (name, email, ...)
   host_ignore: true             # the global ignore file (core.excludesfile, else ~/.config/git/ignore)
 
-github:                         # make a GitHub token available (run --github)
+github:                         # make a GitHub token available
   enabled: false
   secret_source: {command: gh auth token}   # defaults to the host's GH_TOKEN
   fast_ssh_keyscan: false       # let SSH to GitHub (ssh-keyscan, etc.) through without waiting

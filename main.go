@@ -105,9 +105,9 @@ ones after a confirmation, keeping the file's other keys and comments.`,
 }
 
 type runOptions struct {
-	name, agent                                     string
-	keep, noDocker, ecr, github, dryRun, showConfig bool
-	rest                                            []string // args after --
+	name, agent              string
+	keep, dryRun, showConfig bool
+	rest                     []string // args after --
 }
 
 // setArgs takes the agent (claude or shell) from the first argument, and ARGS from those after --.
@@ -139,7 +139,7 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 		Example: `  mbx run claude
   mbx run claude -- -p "summarize this repo"
   mbx run shell -- make test
-  mbx run claude --github --dry-run
+  mbx run claude --dry-run
   mbx run shell --show-config`,
 		ValidArgsFunction: completeAgent,
 		// Only the agent comes before --, so a stray word isn't passed to claude as a prompt
@@ -191,9 +191,6 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 	fs := cmd.Flags()
 	fs.StringVar(&o.name, "name", "", "sandbox name (default: <agent>-<dir>)")
 	fs.BoolVar(&o.keep, "keep", false, "keep the sandbox on exit")
-	fs.BoolVar(&o.noDocker, "no-docker", false, "don't use Docker Engine in the VM")
-	fs.BoolVar(&o.ecr, "ecr", false, "enable the ECR integration in the config")
-	fs.BoolVar(&o.github, "github", false, "enable the GitHub integration in the config")
 	fs.BoolVar(
 		&o.dryRun,
 		"dry-run",
@@ -219,15 +216,6 @@ func setup(o runOptions, workspace string) (*config.Config, *sandbox.Sandbox, er
 	}
 	if o.keep {
 		cfg.Keep = true
-	}
-	if o.noDocker {
-		cfg.Docker.Enabled = false
-	}
-	if o.ecr {
-		cfg.Docker.ECR.Enabled = true
-	}
-	if o.github {
-		cfg.GitHub.Enabled = true
 	}
 
 	sb, err := sandbox.New(cfg, workspace, o.name, o.dryRun)
