@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -79,8 +78,8 @@ func buildImage(r *msb.Runner, b Build) error {
 		fmt.Printf("docker save %s | msb load -t %s\n", shell.Quote(image), shell.Quote(image))
 		return nil
 	}
-	if _, err := exec.LookPath("docker"); err != nil {
-		return errors.New("docker is required to build the image")
+	if err := msb.Require("docker"); err != nil {
+		return fmt.Errorf("building %s: %w", image, err)
 	}
 	build := exec.Command("docker", args...)
 	build.Stdout, build.Stderr = os.Stdout, os.Stderr

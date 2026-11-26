@@ -7,12 +7,14 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
 	"github.com/nao23/mbx/internal/config"
 	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
 	"github.com/nao23/mbx/internal/sandbox"
 	"github.com/nao23/mbx/internal/ui"
 )
@@ -33,6 +35,13 @@ Config files are in ~/.config/mbx (override with the MBX_CONFIG_DIR env var): th
 has the current directory, else config.yaml. --config gives one instead.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		// Check that the host commands the command runs are there, before it does anything
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if names := cmd.Annotations[requires]; names != "" {
+				return msb.Require(strings.Split(names, ",")...)
+			}
+			return nil
+		},
 	}
 	root.PersistentFlags().StringVar(&configFile, "config", "", "the config file to use, instead of the one for the current directory")
 	root.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
@@ -54,6 +63,15 @@ has the current directory, else config.yaml. --config gives one instead.`,
 
 // configFile is --config: the config file to use instead of choosing one by directory
 var configFile string
+
+// requires is the annotation listing the host commands a command runs (comma-separated), checked before
+// it runs. run needs docker only to build the default image, so it checks that itself.
+const requires = "requires"
+
+var (
+	needsMsb       = map[string]string{requires: "msb"}
+	needsMsbDocker = map[string]string{requires: "msb,docker"}
+)
 
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -108,8 +126,9 @@ func completeAgent(_ *cobra.Command, args []string, _ string) ([]string, cobra.S
 func newRunCmd() *cobra.Command {
 	var o runOptions
 	cmd := &cobra.Command{
-		Use:   "run claude|shell [flags] [-- ARGS...]",
-		Short: "Start claude or a shell in a sandbox for the current directory",
+		Use:         "run claude|shell [flags] [-- ARGS...]",
+		Annotations: needsMsb,
+		Short:       "Start claude or a shell in a sandbox for the current directory",
 		Long: `Create a sandbox for the current directory, mounted at the same path as on the host, and start claude
 or a shell in it.
 
@@ -232,9 +251,10 @@ func completeSandboxes(_ *cobra.Command, args []string, _ string) ([]string, cob
 
 func newLsCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "ls",
-		Short: "List sandboxes",
-		Args:  cobra.NoArgs,
+		Use:         "ls",
+		Annotations: needsMsb,
+		Short:       "List sandboxes",
+		Args:        cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return sandbox.List()
 		},
@@ -244,6 +264,7 @@ func newLsCmd() *cobra.Command {
 func newStopCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:               "stop NAME...",
+		Annotations:       needsMsb,
 		Short:             "Stop sandboxes (for those kept with --keep)",
 		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: completeSandboxes,
@@ -256,6 +277,7 @@ func newStopCmd() *cobra.Command {
 func newRmCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:               "rm NAME...",
+		Annotations:       needsMsb,
 		Short:             "Remove sandboxes (session history shared with the host is kept)",
 		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: completeSandboxes,
@@ -275,8 +297,9 @@ func newSecretCmd() *cobra.Command {
 	var name string
 	var dryRun bool
 	rotate := &cobra.Command{
-		Use:   "rotate [flags]",
-		Short: "Fetch the sandboxes' secrets again and swap in the new values",
+		Use:         "rotate [flags]",
+		Annotations: needsMsb,
+		Short:       "Fetch the sandboxes' secrets again and swap in the new values",
 		Long: `Fetch the values of the secrets of the current directory's sandboxes (or the one named with --name) again,
 from the sources in the config, and swap them in (running or not) without a restart. Each secret keeps its
 hosts; to add or remove secrets, recreate the sandbox.`,
@@ -306,8 +329,9 @@ func newBuildCmd() *cobra.Command {
 	var b sandbox.Build
 	var builtIn, dryRun bool
 	cmd := &cobra.Command{
-		Use:   "build (-t IMAGE [-f DOCKERFILE] [CONTEXT] | --default) [flags] [-- DOCKER_BUILD_ARGS...]",
-		Short: "Build an image for the VMs and load it into microsandbox",
+		Use:         "build (-t IMAGE [-f DOCKERFILE] [CONTEXT] | --default) [flags] [-- DOCKER_BUILD_ARGS...]",
+		Annotations: needsMsbDocker,
+		Short:       "Build an image for the VMs and load it into microsandbox",
 		Long: `Build an image for the VMs with the host Docker (for arm64, as the VMs are) and load it into microsandbox.
 As with docker build, the Dockerfile defaults to CONTEXT/Dockerfile and CONTEXT to the current directory.
 With --default, build the default image (` + sandbox.DefaultImage + `) from mbx's built-in Dockerfile: run
