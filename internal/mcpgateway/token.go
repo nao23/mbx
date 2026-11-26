@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/zalando/go-keyring"
 
+	"github.com/nao23/mbx/internal/config"
 	"github.com/nao23/mbx/internal/secret"
 )
 
@@ -68,9 +72,9 @@ func (c *tokenCache) get() (string, error) {
 
 // hostClaudeAIToken is read only for claude.claude_ai_connectors, and refreshed only by the host claude.
 func hostClaudeAIToken() (string, time.Time, error) {
-	out, err := keyring.Get("Claude Code-credentials", secret.KeychainAccount())
+	data, err := hostClaudeCredentials()
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("read the host claude's credentials from the keychain: %w", err)
+		return "", time.Time{}, err
 	}
 	var creds struct {
 		ClaudeAIOAuth struct {
@@ -78,7 +82,7 @@ func hostClaudeAIToken() (string, time.Time, error) {
 			ExpiresAt   int64  `json:"expiresAt"` // ms since epoch
 		} `json:"claudeAiOauth"`
 	}
-	if err := json.Unmarshal([]byte(out), &creds); err != nil {
+	if err := json.Unmarshal(data, &creds); err != nil {
 		return "", time.Time{}, err
 	}
 	e := creds.ClaudeAIOAuth
@@ -90,4 +94,21 @@ func hostClaudeAIToken() (string, time.Time, error) {
 		)
 	}
 	return e.AccessToken, expires, nil
+}
+
+// hostClaudeCredentials reads where the host claude keeps its credentials: the keychain on macOS, else
+// .credentials.json in ~/.claude.
+func hostClaudeCredentials() ([]byte, error) {
+	if runtime.GOOS == "darwin" {
+		out, err := keyring.Get("Claude Code-credentials", secret.KeychainAccount())
+		if err != nil {
+			return nil, fmt.Errorf("read the host claude's credentials from the keychain: %w", err)
+		}
+		return []byte(out), nil
+	}
+	data, err := os.ReadFile(filepath.Join(config.HostClaudeDir(), ".credentials.json"))
+	if err != nil {
+		return nil, fmt.Errorf("read the host claude's credentials: %w", err)
+	}
+	return data, nil
 }

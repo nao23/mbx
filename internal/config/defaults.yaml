@@ -42,7 +42,8 @@ claude:
   # host claude's user-scope servers (mcpServers in ~/.claude.json)
   mcp_servers: []
   # claude.ai connectors to use through the MCP gateway, by display name (e.g. Slack). Only these use the
-  # host claude's claude.ai token, read from the host keychain; with none, mbx never reads it
+  # host claude's claude.ai token, read from the host keychain (on Linux, ~/.claude/.credentials.json); with
+  # none, mbx never reads it
   claude_ai_connectors: []
   host_share:
     sessions: true
