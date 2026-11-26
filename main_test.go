@@ -27,3 +27,28 @@ func TestRunArgs(t *testing.T) {
 		}
 	}
 }
+
+// build takes -t (with -f and one CONTEXT) or --default, and passes what's after -- to docker build
+func TestBuildArgs(t *testing.T) {
+	for args, want := range map[string]string{
+		"-t img":                     "",
+		"-t img -f x.Dockerfile ctx": "",
+		"-t img ctx -- --no-cache":   "",
+		"--default":                  "",
+		"--default -- --no-cache":    "",
+		"":                           "give the image's name with -t",
+		"-f x.Dockerfile":            "give the image's name with -t",
+		"--default -t img":           "give no -t, -f or CONTEXT",
+		"--default ctx":              "give no -t, -f or CONTEXT",
+		"-t img a b":                 `unexpected arguments ["b"]`,
+	} {
+		cmd := newBuildCmd()
+		if err := cmd.ParseFlags(strings.Fields(args)); err != nil {
+			t.Fatal(err)
+		}
+		err := cmd.ValidateArgs(cmd.Flags().Args())
+		if want == "" && err != nil || want != "" && (err == nil || !strings.Contains(err.Error(), want)) {
+			t.Errorf("build %s: err = %v, want %q", args, err, want)
+		}
+	}
+}

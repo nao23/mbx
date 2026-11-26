@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/spf13/cobra"
@@ -44,7 +45,7 @@ has the current directory, else config.yaml. --config gives one instead.`,
 		newStopCmd(),
 		newRmCmd(),
 		newSecretCmd(),
-		newRebuildCmd(),
+		newBuildCmd(),
 		newMCPCmd(),
 		newMCPGatewayCmd(),
 	)
@@ -301,17 +302,57 @@ hosts; to add or remove secrets, recreate the sandbox.`,
 	return cmd
 }
 
-func newRebuildCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "rebuild",
-		Short: "Rebuild the default image (" + sandbox.DefaultImage + ")",
-		Long: `Rebuild the default image (` + sandbox.DefaultImage + `): build mbx's built-in Dockerfile with the host
-Docker, and load it into microsandbox.`,
-		Args: cobra.NoArgs,
+func newBuildCmd() *cobra.Command {
+	var b sandbox.Build
+	var builtIn, dryRun bool
+	cmd := &cobra.Command{
+		Use:   "build (-t IMAGE [-f DOCKERFILE] [CONTEXT] | --default) [flags] [-- DOCKER_BUILD_ARGS...]",
+		Short: "Build an image for the VMs and load it into microsandbox",
+		Long: `Build an image for the VMs with the host Docker (for arm64, as the VMs are) and load it into microsandbox.
+As with docker build, the Dockerfile defaults to CONTEXT/Dockerfile and CONTEXT to the current directory.
+With --default, build the default image (` + sandbox.DefaultImage + `) from mbx's built-in Dockerfile: run
+builds it when it's missing or outdated, so use this to update what it has, like Claude Code (with
+-- --no-cache to skip Docker's cache).
+
+DOCKER_BUILD_ARGS after -- are passed to docker build.`,
+		Example: `  mbx build -t my-sandbox:latest
+  mbx build -t my-sandbox:latest -f sandbox.Dockerfile ./docker
+  mbx build --default -- --no-cache`,
+		Args: func(cmd *cobra.Command, args []string) error {
+			before := args
+			if dash := cmd.ArgsLenAtDash(); dash >= 0 {
+				before = args[:dash]
+			}
+			switch {
+			case builtIn && (b.Image != "" || b.Dockerfile != "" || len(before) > 0):
+				return errors.New("--default builds mbx's built-in Dockerfile; give no -t, -f or CONTEXT with it")
+			case !builtIn && b.Image == "":
+				return errors.New("give the image's name with -t (or --default for the default image)")
+			case len(before) > 1:
+				return fmt.Errorf("unexpected arguments %q; arguments for docker build go after --", before[1:])
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return sandbox.Rebuild()
+			b.Context = "."
+			if dash := cmd.ArgsLenAtDash(); dash >= 0 {
+				args, b.DockerArgs = args[:dash], args[dash:]
+			}
+			if len(args) == 1 {
+				b.Context = args[0]
+			}
+			if !builtIn && b.Dockerfile == "" {
+				b.Dockerfile = filepath.Join(b.Context, "Dockerfile")
+			}
+			return sandbox.BuildImage(b, dryRun)
 		},
 	}
+	fs := cmd.Flags()
+	fs.StringVarP(&b.Image, "tag", "t", "", "the image's name (e.g. my-sandbox:latest)")
+	fs.StringVarP(&b.Dockerfile, "file", "f", "", "the Dockerfile (default: CONTEXT/Dockerfile)")
+	fs.BoolVar(&builtIn, "default", false, "build the default image ("+sandbox.DefaultImage+") from mbx's built-in Dockerfile")
+	fs.BoolVar(&dryRun, "dry-run", false, "print the commands it would run without running them")
+	return cmd
 }
 
 // withConfig runs fn with the config for the current directory.

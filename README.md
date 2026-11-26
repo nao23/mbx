@@ -55,17 +55,17 @@ claude:
   secret_source: {keychain: claude-microsandbox-token}
 ```
 
-By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it automatically when it's missing, and rebuilds it when an mbx update has changed the built-in `Dockerfile` (detected by a hash recorded in an image label). The image is built for arm64 with the host's Docker and loaded into microsandbox. Claude Code is the latest version at build time, so to update it, rebuild with `mbx rebuild`.
+By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it automatically when it's missing, and rebuilds it when an mbx update has changed the built-in `Dockerfile` (detected by a hash recorded in an image label). The image is built for arm64 with the host's Docker and loaded into microsandbox. Claude Code is the latest version at build time, so to update it, rebuild with `mbx build --default -- --no-cache`.
 
 If `microsandbox_config.image` names another image (`ubuntu:24.04`, `ghcr.io/...`, etc.), mbx doesn't build anything; microsandbox pulls it from its registry. mbx features (Docker, the uv wrapper, etc.) don't work if the image lacks what they rely on.
 
 ### Using your own image
 
-Write a Dockerfile, build it for arm64 (as the VMs are) with the host's Docker, and load it into microsandbox, as mbx does for the default image:
+Write a Dockerfile, and build it with `mbx build`: like `docker build`, but for arm64 (as the VMs are) with the host's Docker, and it loads the image into microsandbox (`--dry-run` shows the commands). Arguments after `--` go to `docker build`.
 
 ```sh
-docker build --platform linux/arm64 -t my-sandbox:latest .
-docker save my-sandbox:latest | msb load -t my-sandbox:latest
+mbx build -t my-sandbox:latest .                      # ./Dockerfile
+mbx build -t my-sandbox:latest -f my.Dockerfile ctx   # another Dockerfile and context
 ```
 
 ```yaml
@@ -83,7 +83,7 @@ The image needs what the agent and the enabled features run (Ubuntu package name
 - `uv`: `uv`
 - MCP servers: `socat`
 
-The built-in [`Dockerfile`](internal/sandbox/Dockerfile) is a starting point. mbx doesn't rebuild your image, so run the two commands again to update it.
+The built-in [`Dockerfile`](internal/sandbox/Dockerfile) is a starting point. mbx doesn't rebuild your image, so run `mbx build` again to update it.
 
 ## Usage
 
@@ -106,7 +106,7 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 | `mbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
 | `mbx rm NAME...` | Remove sandboxes. Session history shared with the host is kept |
 | `mbx secret rotate [OPTIONS]` | Fetch the current directory's sandboxes' secrets again and swap in the new values, without a restart |
-| `mbx rebuild` | Rebuild the default image (`mbx-default:latest`). Use it to update Claude Code |
+| `mbx build -t IMAGE [-f DOCKERFILE] [CONTEXT]` | Build an image for the VMs with the host Docker and load it into microsandbox. `--default` builds the default image (`mbx-default:latest`) from the built-in Dockerfile; use it to update Claude Code |
 | `mbx mcp [status\|login\|logout]` | mbx's logins to MCP servers: their state and where the credentials are kept (see below) |
 | `mbx mcp-gw [status\|start\|stop\|restart]` | Manage the MCP gateway (see below) |
 | `mbx completion zsh\|bash\|fish` | Print a shell completion script |

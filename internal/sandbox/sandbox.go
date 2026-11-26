@@ -48,7 +48,7 @@ func (s *Sandbox) Run(args []string) (int, error) {
 	r, cfg, name := s.r, s.cfg, s.name
 	if why := defaultImageOutdated(); cfg.Image() == DefaultImage && why != "" {
 		r.Step(msb.OnHost, "Build the default image", why+"; build mbx's Dockerfile with the host Docker and load it into microsandbox")
-		if err := rebuild(r); err != nil {
+		if err := buildImage(r, Build{}); err != nil {
 			return 0, err
 		}
 	}

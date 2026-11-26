@@ -46,18 +46,36 @@ func defaultImageOutdated() string {
 	return ""
 }
 
-func Rebuild() error {
-	return rebuild(&msb.Runner{})
+// Build is an image to build: Image from Dockerfile with Context, or with no Dockerfile, DefaultImage from
+// mbx's built-in one. DockerArgs are added to docker build's.
+type Build struct {
+	Image, Dockerfile, Context string
+	DockerArgs                 []string
 }
 
-// rebuild builds the image with the host Docker for arm64 (as microsandbox VMs on Apple Silicon are) and
-// loads it with docker save | msb load. The Dockerfile needs no build context, so it's passed on stdin.
-func rebuild(r *msb.Runner) error {
-	image := DefaultImage
-	args := []string{"build", "--platform", "linux/arm64", "--label", labelDockerfile + "=" + dockerfileHash(), "-t", image, "-"}
+// BuildImage builds an image and loads it into microsandbox; with dryRun, it only shows the commands.
+func BuildImage(b Build, dryRun bool) error {
+	return buildImage(&msb.Runner{DryRun: dryRun}, b)
+}
+
+// buildImage builds the image with the host Docker for arm64 (as microsandbox VMs on Apple Silicon are) and
+// loads it with docker save | msb load. The built-in Dockerfile needs no build context, so it's passed on
+// stdin, labeled with its hash.
+func buildImage(r *msb.Runner, b Build) error {
+	args := []string{"build", "--platform", "linux/arm64"}
+	if b.Dockerfile == "" {
+		b.Image, b.Context = DefaultImage, "-"
+		args = append(args, "--label", labelDockerfile+"="+dockerfileHash())
+	} else {
+		args = append(args, "-f", b.Dockerfile)
+	}
+	args = append(append(append(args, "-t", b.Image), b.DockerArgs...), b.Context)
+	image := b.Image
 	if r.DryRun {
 		r.Show("docker", args...)
-		fmt.Println("  < (mbx's built-in Dockerfile)")
+		if b.Dockerfile == "" {
+			fmt.Println("  < (mbx's built-in Dockerfile)")
+		}
 		fmt.Printf("docker save %s | msb load -t %s\n", shell.Quote(image), shell.Quote(image))
 		return nil
 	}
@@ -65,7 +83,10 @@ func rebuild(r *msb.Runner) error {
 		return errors.New("docker is required to build the image")
 	}
 	build := exec.Command("docker", args...)
-	build.Stdin, build.Stdout, build.Stderr = strings.NewReader(dockerfile), os.Stdout, os.Stderr
+	build.Stdout, build.Stderr = os.Stdout, os.Stderr
+	if b.Dockerfile == "" {
+		build.Stdin = strings.NewReader(dockerfile)
+	}
 	if err := build.Run(); err != nil {
 		return fmt.Errorf("docker build: %w", err)
 	}
