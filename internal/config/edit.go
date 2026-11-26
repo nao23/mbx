@@ -47,7 +47,7 @@ func Edit(workspace string, newFile bool) error {
 	}
 	if forDir {
 		f.Fixed = append(f.Fixed, wizard.Change{Path: []string{"directories"}, Value: []string{tilde(workspace)}})
-		f.Header = fmt.Sprintf("msbx's config for %s and below, used there instead of config.yaml (made by msbx config\nedit from config.yaml). Check it with msbx run --show-config", tilde(workspace))
+		f.Header = fmt.Sprintf("msbx's config for %s and below, used there instead of config.yaml (made by msbx config\nedit from config.yaml). Check it with msbx run claude --show-config", tilde(workspace))
 	}
 	changes, err := wizard.Edit(f, values, wizardSettings(cur))
 	if err != nil || changes == nil {
@@ -58,7 +58,7 @@ func Edit(workspace string, newFile bool) error {
 	}
 
 	st := ui.For(os.Stdout)
-	fmt.Println(st.Dim("  Check it with msbx run --show-config or --dry-run"))
+	fmt.Println(st.Dim("  Check it with msbx run claude --show-config or --dry-run"))
 	for _, c := range changes {
 		if strings.Join(c.Path, ".") != "claude.mcp_servers" {
 			continue

@@ -175,7 +175,6 @@ func TestGitHubMeta(t *testing.T) {
 // region's S3 host, and is an error without docker, a registry, or a secret source
 func TestECR(t *testing.T) {
 	cfg := loadConfig(t, `
-		agent: shell
 		docker:
 		  ecr: {enabled: true, registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com}
 	`)

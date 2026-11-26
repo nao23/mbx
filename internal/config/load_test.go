@@ -52,7 +52,7 @@ func addConfig(t *testing.T, dir, name, yamlText string) string {
 // The file whose directories has the workspace or the deepest of its parents is used, else config.yaml. Only
 // that one is layered over the defaults: network.allow is appended to the defaults', other lists replaced
 func TestLoadChoosesByDirectory(t *testing.T) {
-	dir := writeConfig(t, "agent: shell\n")
+	dir := writeConfig(t, "command: [zsh]\n")
 	work := addConfig(t, dir, "work.yaml", `
 		directories: [/work]
 		command: [fish]
@@ -79,8 +79,8 @@ func TestLoadChoosesByDirectory(t *testing.T) {
 	}
 
 	cfg, _ := Load("/work/repo", "")
-	if cfg.Agent != "claude" || !cfg.Keep {
-		t.Errorf("agent = %q, keep = %v; want claude (config.yaml isn't layered) and true", cfg.Agent, cfg.Keep)
+	if !slices.Equal(cfg.Command, []string{"bash"}) || !cfg.Keep {
+		t.Errorf("command = %v, keep = %v; want [bash] (config.yaml isn't layered) and true", cfg.Command, cfg.Keep)
 	}
 	cfg, _ = Load("/work", "")
 	if !slices.Equal(cfg.Command, []string{"fish"}) || !slices.Equal(allowList(cfg), []string{"a.example.com"}) {
@@ -90,28 +90,27 @@ func TestLoadChoosesByDirectory(t *testing.T) {
 
 // --config uses the file given, wherever it is and whatever its directories; a missing one is an error
 func TestLoadGivenFile(t *testing.T) {
-	writeConfig(t, "agent: shell\n")
+	writeConfig(t, "command: [zsh]\n")
 	given := addConfig(t, t.TempDir(), "other.yaml", "directories: [/elsewhere]\nkeep: true\n")
 	cfg, err := Load("/work", given)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := cfg.File(); got != given || !cfg.Keep || cfg.Agent != "claude" {
-		t.Errorf("file = %s, keep = %v, agent = %q", got, cfg.Keep, cfg.Agent)
+	if got, _ := cfg.File(); got != given || !cfg.Keep || !slices.Equal(cfg.Command, []string{"bash"}) {
+		t.Errorf("file = %s, keep = %v, command = %v", got, cfg.Keep, cfg.Command)
 	}
 	if _, err := Load("/work", filepath.Join(t.TempDir(), "missing.yaml")); err == nil {
 		t.Error("missing --config file: want an error")
 	}
 }
 
-// Ambiguous or misplaced directories are errors whichever the workspace, and so is the old projects:
+// Ambiguous or misplaced directories are errors whichever the workspace
 func TestChooseErrors(t *testing.T) {
 	for _, tc := range []struct{ name, config, other, want string }{
 		{"in two files", "", "directories: [/a/b]\n", "/a/b is in both"},
 		{"config.yaml with directories", "directories: [/x]\n", "", "takes none"},
 		{"another file without them", "", "keep: true\n", "list the directories"},
 		{"a relative directory", "", "directories: [repo]\n", "isn't an absolute path"},
-		{"projects", "projects: {/work: {keep: true}}\n", "", "projects: is no longer supported"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := writeConfig(t, tc.config)
@@ -144,9 +143,9 @@ func TestSecretSourceIsReplaced(t *testing.T) {
 // Unknown keys (nested too) and broken YAML are errors naming the problem
 func TestLoadErrors(t *testing.T) {
 	for _, tc := range []struct{ name, yaml, want string }{
-		{"unknown key", "agnet: shell\n", "agnet"},
+		{"unknown key", "kep: true\n", "kep"},
 		{"unknown nested key", "docker: {enable: false}\n", "enable"},
-		{"broken yaml", "agent: [\n", "config.yaml"},
+		{"broken yaml", "keep: [\n", "config.yaml"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			writeConfig(t, tc.yaml)

@@ -163,12 +163,12 @@ func TestSetupScriptHasNoBracedVars(t *testing.T) {
 // secrets, flags and hosts, and nothing of claude's
 func TestBuildPlanShell(t *testing.T) {
 	cfg := loadConfig(t, `
-		agent: shell
 		microsandbox_config:
 		  scripts: {hello: echo hello}
 		  network: {allow: [pypi.org]}
 		github: {enabled: true}
 	`, "/work/repo")
+	cfg.Agent = "shell"
 	p := buildPlan(cfg, "/work/repo", "shell-repo", nil)
 
 	if _, ok := p.conf["network"]; ok {

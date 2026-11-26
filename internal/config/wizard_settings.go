@@ -12,7 +12,6 @@ import (
 
 // wizardSettings lists the settings in msbx config edit's menu, in its order. cur is the config being edited.
 func wizardSettings(cur *Config) []wizard.Setting {
-	claude := func(v wizard.Values) bool { return v.String("agent") == "claude" }
 	github := func(v wizard.Values) bool { return v.Bool("github.enabled") }
 	docker := func(v wizard.Values) bool { return v.Bool("docker.enabled") }
 	ecr := func(v wizard.Values) bool { return docker(v) && v.Bool("docker.ecr.enabled") }
@@ -45,33 +44,27 @@ func wizardSettings(cur *Config) []wizard.Setting {
 
 	return []wizard.Setting{
 		{
-			Name: "Agent", Path: "agent", Title: "What does msbx run start?",
-			Input: wizard.Choice{Options: []wizard.Option{{Value: "claude", Label: "claude"}, {Value: "shell", Label: "A shell (or the command in the config)"}}},
-		},
-		{
 			Name: "Claude token", Path: "claude.secret_source", Title: "Where does claude's token (claude setup-token) come from?",
-			Show:  claude,
 			Input: wizard.Secret{Suggest: suggest(map[string]string{"env": "CLAUDE_CODE_OAUTH_TOKEN"})},
 		},
 		{
 			Name: "MCP servers", Path: "claude.mcp_servers", Title: "MCP servers to use",
 			Description: "Through the MCP gateway, with msbx's own logins (msbx mcp login). From the host's ~/.claude.json and mcp_gateway.servers",
 			Show: func(v wizard.Values) bool {
-				return claude(v) && (len(servers) > 0 || len(v.List("claude.mcp_servers")) > 0)
+				return len(servers) > 0 || len(v.List("claude.mcp_servers")) > 0
 			},
 			Input: wizard.Multi{Options: servers},
 		},
 		{
 			Name: "Connectors", Path: "claude.claude_ai_connectors", Title: "claude.ai connectors to use",
 			Description: "Display names, comma-separated (e.g. Slack, Notion). They use the host claude's login",
-			Show:        claude,
 			Input:       wizard.List{},
 		},
 		{
 			Name: "Skills", Path: "claude.host_share.skills", Title: "Host skills to share",
 			Description: "Read-only, from ~/.claude/skills. Skills needing host tools won't work in the VM",
 			Show: func(v wizard.Values) bool {
-				return claude(v) && (len(skills) > 0 || len(v.List("claude.host_share.skills")) > 0)
+				return len(skills) > 0 || len(v.List("claude.host_share.skills")) > 0
 			},
 			Input: wizard.Multi{Options: skills, All: "*"},
 		},

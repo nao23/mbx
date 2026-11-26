@@ -17,7 +17,7 @@ import (
 type Config struct {
 	Version           int                      `yaml:"version"`
 	Directories       []string                 `yaml:"directories"`
-	Agent             string                   `yaml:"agent"`
+	Agent             string                   `yaml:"-"` // what run starts: claude or shell, from the command line
 	Command           []string                 `yaml:"command"`
 	Keep              bool                     `yaml:"keep"`
 	Microsandbox      map[string]any           `yaml:"microsandbox_config"`

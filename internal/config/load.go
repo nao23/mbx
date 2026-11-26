@@ -130,9 +130,6 @@ func readConfigFile(path string) (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
-	if _, ok := m["projects"]; ok {
-		return nil, fmt.Errorf("%s: projects: is no longer supported; move each entry to a config file of its own that lists the directory in directories: (see the README)", path)
-	}
 	return m, nil
 }
 
@@ -144,7 +141,7 @@ func decode(merged map[string]any) (*Config, error) {
 	}
 	dec := yaml.NewDecoder(bytes.NewReader(buf))
 	dec.KnownFields(true)
-	var cfg Config
+	cfg := Config{Agent: "claude"}
 	if err := dec.Decode(&cfg); err != nil {
 		return nil, err
 	}

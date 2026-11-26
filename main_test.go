@@ -5,13 +5,13 @@ import (
 	"testing"
 )
 
-// run accepts only the agent before --, so a stray word isn't passed to claude as a prompt
+// run takes the agent, and only it, before --, so a stray word isn't passed to claude as a prompt
 func TestRunArgs(t *testing.T) {
 	for args, want := range map[string]string{
-		"":                       "",
+		"":                       "which agent",
+		"-- -p hi":               "which agent",
 		"claude":                 "",
 		"shell -- make test":     "",
-		"-- -p hi":               "",
 		"claude -- -p hi":        "",
 		"nope":                   `unknown agent "nope"`,
 		"claude extra":           `unexpected arguments ["extra"]`,

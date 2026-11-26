@@ -91,12 +91,9 @@ type runOptions struct {
 	rest                                            []string // args after --
 }
 
-// setArgs takes the agent (claude or shell) from the first argument, unless it comes after --.
-func (o *runOptions) setArgs(cmd *cobra.Command, args []string) {
-	if len(args) > 0 && cmd.ArgsLenAtDash() != 0 && (args[0] == "claude" || args[0] == "shell") {
-		o.agent, args = args[0], args[1:]
-	}
-	o.rest = args
+// setArgs takes the agent (claude or shell) from the first argument, and ARGS from those after --.
+func (o *runOptions) setArgs(args []string) {
+	o.agent, o.rest = args[0], args[1:]
 }
 
 // completeAgent completes claude or shell as the first argument.
@@ -110,38 +107,39 @@ func completeAgent(_ *cobra.Command, args []string, _ string) ([]string, cobra.S
 func newRunCmd() *cobra.Command {
 	var o runOptions
 	cmd := &cobra.Command{
-		Use:   "run [claude|shell] [flags] [-- ARGS...]",
+		Use:   "run claude|shell [flags] [-- ARGS...]",
 		Short: "Start claude or a shell in a sandbox for the current directory",
 		Long: `Create a sandbox for the current directory, mounted at the same path as on the host, and start claude
-or a shell in it (default: agent in the config, i.e. claude).
+or a shell in it.
 
 The sandbox is removed on exit unless --keep is given. If a sandbox with the same name exists, run
 connects to it instead, and leaves it running on exit.
 
 ARGS after -- are passed to claude; for shell they replace the configured command (default: bash).`,
-		Example: `  msbx run
+		Example: `  msbx run claude
   msbx run claude -- -p "summarize this repo"
   msbx run shell -- make test
-  msbx run --github --dry-run
+  msbx run claude --github --dry-run
   msbx run shell --show-config`,
 		ValidArgsFunction: completeAgent,
-		// Only the agent may come before --, so a stray word isn't passed to claude as a prompt
+		// Only the agent comes before --, so a stray word isn't passed to claude as a prompt
 		Args: func(cmd *cobra.Command, args []string) error {
 			before := args
 			if dash := cmd.ArgsLenAtDash(); dash >= 0 {
 				before = args[:dash]
 			}
 			switch {
-			case len(before) == 0, len(before) == 1 && (before[0] == "claude" || before[0] == "shell"):
-				return nil
-			case len(before) == 1:
+			case len(before) == 0:
+				return errors.New("which agent to start: msbx run claude or msbx run shell")
+			case before[0] != "claude" && before[0] != "shell":
 				return fmt.Errorf("unknown agent %q (claude or shell); arguments for it go after --", before[0])
-			default:
+			case len(before) > 1:
 				return fmt.Errorf("unexpected arguments %q; arguments for the agent go after --", before[1:])
 			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			o.setArgs(cmd, args)
+			o.setArgs(args)
 			workspace, err := os.Getwd()
 			if err != nil {
 				return err

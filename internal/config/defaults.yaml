@@ -5,8 +5,7 @@ version: 1
 # but config.yaml lists some; config.yaml is used where no other file does
 directories: []
 
-# What run starts when not given on the command line: claude, or shell (starts command)
-agent: claude
+# What msbx run shell starts (ARGS after -- replace it)
 command: [bash]
 
 # Don't remove the sandbox on exit (same as run --keep)

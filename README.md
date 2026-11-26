@@ -27,7 +27,7 @@ go install github.com/nao23/msbx@latest
 
 ## Setup
 
-`msbx config edit` makes the config file from a menu of the agent, the token sources and the features (or write it by hand, see below). Run it again to edit the file the current directory uses, or run `msbx config edit --new` in a directory that needs its own config to make one for it.
+`msbx config edit` makes the config file from a menu of claude's settings, the token sources and the features (or write it by hand, see below). Run it again to edit the file the current directory uses, or run `msbx config edit --new` in a directory that needs its own config to make one for it.
 
 Put these files in the config dir `~/.config/msbx/`:
 
@@ -88,20 +88,20 @@ The built-in [`Dockerfile`](internal/sandbox/Dockerfile) is a starting point. ms
 ## Usage
 
 ```sh
-msbx run                         # start claude (the agent in the config is the default)
+msbx run claude                  # start claude
 msbx run claude -- -p "..."      # pass arguments to claude
 msbx run shell                   # start a shell (bash by default)
 msbx run shell -- make test      # start any command
-msbx run --keep                  # keep the sandbox after exit
-msbx run --dry-run               # only show the steps (runs nothing, fetches no secrets)
-msbx run --show-config           # only show the config used (which file, and why), with the options applied
-msbx run --config ~/work.yaml    # use this config file (any command takes --config)
+msbx run claude --keep           # keep the sandbox after exit
+msbx run claude --dry-run        # only show the steps (runs nothing, fetches no secrets)
+msbx run claude --show-config    # only show the config used (which file, and why), with the options applied
+msbx run claude --config ~/work.yaml  # use this config file (any command takes --config)
 ```
 
 | Command | Description |
 |---|---|
 | `msbx config edit [--new]` | Make or edit a config file from a menu listing its settings and values: the one the current directory uses, or with `--new` a new one for it starting from `config.yaml`. Pick a setting to change it, and Save to write the changed ones after a confirmation, keeping the file's comments |
-| `msbx run [claude\|shell] [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
+| `msbx run claude\|shell [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
 | `msbx ls` | List the sandboxes msbx created |
 | `msbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
 | `msbx rm NAME...` | Remove sandboxes. Session history shared with the host is kept |
@@ -151,11 +151,10 @@ microsandbox_flags:             # msb create flags (flag name: value)
   # some-switch: true           # → --some-switch (true gives a bare flag; false and null are omitted)
 
 # --- msbx's extensions ---
-agent: claude                   # what run starts when not given (claude / shell)
-command: [bash]                 # the command shell starts
+command: [bash]                 # the command msbx run shell starts
 keep: false                     # don't remove the sandbox on exit (same as run --keep)
 
-claude:                         # used only when the agent is claude
+claude:                         # used only by msbx run (claude), not msbx run shell
   secret_source: {env: CLAUDE_CODE_OAUTH_TOKEN}   # where the value of CLAUDE_CODE_OAUTH_TOKEN comes from (default: the host env var)
   extra_system_prompt: sandbox-prompt.md   # a file appended after the built-in prompt (the VM environment description)
   config_dir: /root/.claude-state   # CLAUDE_CONFIG_DIR in the VM
@@ -223,7 +222,7 @@ Layered in this order: defaults → the config file → command-line options.
 - Only `microsandbox_config.network.allow` is appended to instead of replaced
 - `secret_source` (and each entry of `secret_sources`) is replaced whole instead of merged key by key, so `keychain` and `command` don't get mixed
 
-`msbx run --show-config` shows the final config, and which file was used and why.
+`msbx run claude --show-config` shows the final config, and which file was used and why.
 
 ## Secrets
 
@@ -300,7 +299,7 @@ There are two kinds of servers, with tokens from different places:
 
 ## How it works
 
-`msbx run --dry-run` shows the actual steps. For claude, it roughly does the following:
+`msbx run claude --dry-run` shows the actual steps. For claude, it roughly does the following:
 
 1. [Host] Fetch secret values (kept only in this process's environment and inherited by `msb`)
 2. [Host] Create the shared parts of `~/.claude` (`projects/`, `file-history/`, `history.jsonl`) if they're missing. They exist once the host's claude has been used, so this is usually skipped
