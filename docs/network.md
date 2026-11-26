@@ -6,6 +6,7 @@ How mbx sets up the VM's network on top of microsandbox's. The allowlist is `mic
 - TLS is intercepted (decrypted) only for secret destinations (`api.anthropic.com`, the ECR registry, `github.com`, etc.). Other allowed domains aren't intercepted (`tls.bypass`), as containers in the VM don't trust microsandbox's CA
 - microsandbox replaces lists whole when layering configs, so for `network` mbx adds its entries first and passes it as one config
 - A rule with only a domain (`github.com`, etc.) allows all ports. To restrict ports, write e.g. `github.com:tcp:443`
+- Rules work by domain, IP and port only. microsandbox can't restrict traffic by HTTP method or path (e.g. allow GET but not POST to an API)
 - For connections matching a domain rule, microsandbox waits up to 5 seconds for the first bytes sent (to read the SNI or Host and check the connection is to an allowed domain). Protocols where the server speaks first, like SSH, wait 5 seconds on every connection. Connections allowed by an IP rule don't wait
 
 ## Hosts mbx adds

@@ -315,6 +315,7 @@ Everything else, such as `.claude.json` and the plugin cache, is created in the 
 ## Limitations
 
 - Changes to the allowlist and other settings take effect the next time a sandbox is created
+- Traffic is allowed by domain, IP and port only. microsandbox can't restrict it by HTTP method or path (e.g. allow GET but not POST to an API)
 - Secrets can't be added to a running sandbox later (their values can be swapped)
 - Host tools and files outside the mounted directories aren't available in the VM
 - The MCP gateway supports only remote (HTTP) MCP servers, not stdio ones
