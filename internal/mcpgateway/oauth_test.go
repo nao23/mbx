@@ -19,7 +19,7 @@ import (
 	"github.com/nao23/mbx/internal/msb"
 )
 
-// Tests run no external commands: the keychain is go-keyring's in-memory mock, the browser is a plain
+// Tests run no external commands: the keyring is go-keyring's in-memory mock, the browser is a plain
 // HTTP client, and PATH is empty so any other command fails instead of running
 func TestMain(m *testing.M) {
 	os.Setenv("PATH", "")

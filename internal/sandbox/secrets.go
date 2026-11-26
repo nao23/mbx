@@ -83,7 +83,7 @@ func resolveSecrets(r *msb.Runner, cfg *config.Config, features []feature.Featur
 		if f.host != "" {
 			label += "  " + st.Cyan("→ "+f.host)
 		}
-		// Shown while fetching, so a keychain dialog or a command's login prompt shows what it's for
+		// Shown while fetching, so a keyring dialog or a command's login prompt shows what it's for
 		var val string
 		err := ui.Task(label, func(out io.Writer) (err error) {
 			val, err = f.source.Fetch(out)

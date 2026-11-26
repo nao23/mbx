@@ -212,7 +212,7 @@ func LoginStatus(cfg *config.Config) error {
 		if cfg.MCPGateway.Servers[name].URL != "" {
 			from = "mcp_gateway.servers"
 		}
-		where := fmt.Sprintf("%s, service %s, account %s", secret.Keychain(), keychainService, name)
+		where := fmt.Sprintf("%s, service %s, account %s", secret.Keyring(), keyringService, name)
 		l, err := loadLogin(name)
 		var ok bool
 		var note string

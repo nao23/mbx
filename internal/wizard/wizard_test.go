@@ -82,9 +82,9 @@ func TestChanges(t *testing.T) {
 	}
 	from := ValuesOf(map[string]any{
 		"a": map[string]any{"on": true, "list": []any{"p"}},
-		"s": map[string]any{"keychain": "k"},
+		"s": map[string]any{"keyring": "k"},
 	}, settings)
-	if want := (Values{"a.on": true, "a.list": []string{"p"}, "b": []string(nil), "s": secret.Source{Keychain: "k"}}); !same(from, want) {
+	if want := (Values{"a.on": true, "a.list": []string{"p"}, "b": []string(nil), "s": secret.Source{Keyring: "k"}}); !same(from, want) {
 		t.Errorf("ValuesOf = %v, want %v", from, want)
 	}
 	if got := Changes(settings, from, from); len(got) != 0 {

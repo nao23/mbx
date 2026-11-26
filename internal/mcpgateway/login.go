@@ -20,7 +20,7 @@ type login struct {
 	ClientSecret string    `json:"client_secret,omitempty"`
 	Scope        string    `json:"scope,omitempty"`
 	Expiry       time.Time `json:"expiry,omitzero"` // zero if the server didn't say
-	AccessToken  string    `json:"-"`               // in their own keychain items
+	AccessToken  string    `json:"-"`               // in their own keyring items
 	RefreshToken string    `json:"-"`
 }
 
@@ -45,28 +45,28 @@ func (l *login) refresh(ctx context.Context) error {
 	return nil
 }
 
-// A login takes three keychain items, as go-keyring writes at most about 3 KB per item on macOS: account
+// A login takes three keyring items, as go-keyring writes at most about 3 KB per item on macOS: account
 // <server> holds the JSON, <server>:access and <server>:refresh the tokens.
-const keychainService = "mbx-mcp-gateway"
+const keyringService = "mbx-mcp-gateway"
 
 func loadLogin(server string) (*login, error) {
-	data, err := keyring.Get(keychainService, server)
+	data, err := keyring.Get(keyringService, server)
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil, nil
 	} else if err != nil {
-		return nil, fmt.Errorf("read the login for %s from the keychain: %w", server, err)
+		return nil, fmt.Errorf("read the login for %s from the keyring: %w", server, err)
 	}
 	var l login
 	if err := json.Unmarshal([]byte(data), &l); err != nil {
-		return nil, fmt.Errorf("the keychain's login for %s is unreadable (log in again): %w", server, err)
+		return nil, fmt.Errorf("the keyring's login for %s is unreadable (log in again): %w", server, err)
 	}
-	if l.AccessToken, err = keyring.Get(keychainService, server+":access"); errors.Is(err, keyring.ErrNotFound) {
+	if l.AccessToken, err = keyring.Get(keyringService, server+":access"); errors.Is(err, keyring.ErrNotFound) {
 		return nil, nil // saved by an older mbx, with the tokens in the JSON
 	} else if err != nil {
-		return nil, fmt.Errorf("read the token for %s from the keychain: %w", server, err)
+		return nil, fmt.Errorf("read the token for %s from the keyring: %w", server, err)
 	}
-	if l.RefreshToken, err = keyring.Get(keychainService, server+":refresh"); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-		return nil, fmt.Errorf("read the refresh token for %s from the keychain: %w", server, err)
+	if l.RefreshToken, err = keyring.Get(keyringService, server+":refresh"); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return nil, fmt.Errorf("read the refresh token for %s from the keyring: %w", server, err)
 	}
 	return &l, nil
 }
@@ -79,12 +79,12 @@ func saveLogin(server string, l *login) error {
 	items := [][2]string{{server, string(data)}, {server + ":access", l.AccessToken}}
 	if l.RefreshToken != "" {
 		items = append(items, [2]string{server + ":refresh", l.RefreshToken})
-	} else if err := keyring.Delete(keychainService, server+":refresh"); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+	} else if err := keyring.Delete(keyringService, server+":refresh"); err != nil && !errors.Is(err, keyring.ErrNotFound) {
 		return err
 	}
 	for _, it := range items {
-		if err := keyring.Set(keychainService, it[0], it[1]); err != nil {
-			return fmt.Errorf("save the login for %s in the keychain: %w", server, err)
+		if err := keyring.Set(keyringService, it[0], it[1]); err != nil {
+			return fmt.Errorf("save the login for %s in the keyring: %w", server, err)
 		}
 	}
 	return nil
@@ -92,8 +92,8 @@ func saveLogin(server string, l *login) error {
 
 func removeLogin(server string) error {
 	for _, account := range []string{server, server + ":access", server + ":refresh"} {
-		if err := keyring.Delete(keychainService, account); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-			return fmt.Errorf("remove the login for %s from the keychain: %w", server, err)
+		if err := keyring.Delete(keyringService, account); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return fmt.Errorf("remove the login for %s from the keyring: %w", server, err)
 		}
 	}
 	return nil

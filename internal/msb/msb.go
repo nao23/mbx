@@ -199,7 +199,7 @@ type Secret struct {
 	Env   string
 	Hosts []string
 	// FromEnv: msb takes the value from its environment variable of the same name, where mbx puts the value
-	// it fetched from any secret_source (keychain, command, ...). False for a value written in the config
+	// it fetched from any secret_source (keyring, command, ...). False for a value written in the config
 	FromEnv bool
 }
 

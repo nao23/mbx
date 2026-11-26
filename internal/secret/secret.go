@@ -16,26 +16,26 @@ import (
 	"github.com/nao23/mbx/internal/shell"
 )
 
-// KeychainAccount is the login user, the account `security add-generic-password -a "$USER"` and Claude Code use.
-func KeychainAccount() string {
+// KeyringAccount is the login user, the account `security add-generic-password -a "$USER"` and Claude Code use.
+func KeyringAccount() string {
 	if u, err := user.Current(); err == nil {
 		return u.Username
 	}
 	return os.Getenv("USER")
 }
 
-// Keychain names the store keychain items are in: the macOS keychain, or on Linux the Secret Service
+// Keyring names the store keyring items are in: the macOS keychain, or on Linux the Secret Service
 // (GNOME Keyring, KWallet, etc.), as go-keyring uses them.
-func Keychain() string {
+func Keyring() string {
 	if runtime.GOOS == "darwin" {
 		return "the macOS keychain"
 	}
 	return "the Secret Service keyring"
 }
 
-// AddKeychainItem is the command that adds the keychain item name, for the login user. secret-tool reads
+// AddKeyringItem is the command that adds the keyring item name, for the login user. secret-tool reads
 // the value from stdin.
-func AddKeychainItem(name string) string {
+func AddKeyringItem(name string) string {
 	if runtime.GOOS == "darwin" {
 		return "security add-generic-password -s " + shell.Quote(name) + ` -a "$USER" -w '<value>'`
 	}
@@ -44,18 +44,18 @@ func AddKeychainItem(name string) string {
 
 // Source says where a secret value comes from. Set exactly one field
 type Source struct {
-	Keychain string `yaml:"keychain,omitempty"`
-	Command  string `yaml:"command,omitempty"`
-	Env      string `yaml:"env,omitempty"`
+	Keyring string `yaml:"keyring,omitempty"`
+	Command string `yaml:"command,omitempty"`
+	Env     string `yaml:"env,omitempty"`
 }
 
 // Describe returns the command that fetches the value, for dry-run output.
 func (s Source) Describe() string {
 	switch {
-	case s.Keychain != "" && runtime.GOOS != "darwin":
-		return "secret-tool lookup service " + shell.Quote(s.Keychain) + " username " + shell.Quote(KeychainAccount())
-	case s.Keychain != "":
-		return "security find-generic-password -s " + shell.Quote(s.Keychain) + " -a " + shell.Quote(KeychainAccount()) + " -w"
+	case s.Keyring != "" && runtime.GOOS != "darwin":
+		return "secret-tool lookup service " + shell.Quote(s.Keyring) + " username " + shell.Quote(KeyringAccount())
+	case s.Keyring != "":
+		return "security find-generic-password -s " + shell.Quote(s.Keyring) + " -a " + shell.Quote(KeyringAccount()) + " -w"
 	case s.Command != "":
 		return s.Command
 	default:
@@ -65,8 +65,8 @@ func (s Source) Describe() string {
 
 func (s Source) Label() string {
 	switch {
-	case s.Keychain != "":
-		return "keychain " + shell.Quote(s.Keychain)
+	case s.Keyring != "":
+		return "keyring " + shell.Quote(s.Keyring)
 	case s.Command != "":
 		return "$ " + s.Command
 	default:
@@ -84,14 +84,14 @@ func (s Source) Fetch(stderr io.Writer) (string, error) {
 	var out []byte
 	var err error
 	switch {
-	case s.Keychain != "":
-		v, err := keyring.Get(s.Keychain, KeychainAccount())
+	case s.Keyring != "":
+		v, err := keyring.Get(s.Keyring, KeyringAccount())
 		if err != nil {
 			return "", fmt.Errorf(
-				"keychain item %s (account %s) not found or not readable (add it with: %s)",
-				shell.Quote(s.Keychain),
-				KeychainAccount(),
-				AddKeychainItem(s.Keychain),
+				"keyring item %s (account %s) not found or not readable (add it with: %s)",
+				shell.Quote(s.Keyring),
+				KeyringAccount(),
+				AddKeyringItem(s.Keyring),
 			)
 		}
 		out = []byte(v)
@@ -105,7 +105,7 @@ func (s Source) Fetch(stderr io.Writer) (string, error) {
 	case s.Env != "":
 		out = []byte(os.Getenv(s.Env))
 	default:
-		return "", errors.New("no source (keychain / command / env)")
+		return "", errors.New("no source (keyring / command / env)")
 	}
 
 	val := strings.TrimSpace(string(out))

@@ -424,7 +424,7 @@ login; the gateway refreshes the token after that. claude.ai connectors use the 
 		},
 		&cobra.Command{
 			Use:   "logout SERVER",
-			Short: "Remove mbx's login to a server from the keychain",
+			Short: "Remove mbx's login to a server from the keyring",
 			Args:  cobra.ExactArgs(1),
 			RunE:  func(cmd *cobra.Command, args []string) error { return mcpgateway.Logout(args[0]) },
 		},

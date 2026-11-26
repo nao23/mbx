@@ -26,7 +26,7 @@ func (c Change) String() string {
 }
 
 // apply makes the changes to a config file's text, keeping its comments and the keys it doesn't change.
-// Maps and short lists written are in flow style ({keychain: x}, [a, b]). A header replaces the comment
+// Maps and short lists written are in flow style ({keyring: x}, [a, b]). A header replaces the comment
 // at the top. Top-level keys in top go at the top when added, in that order; others go at the end.
 func apply(data []byte, changes []Change, header string, top []string) ([]byte, error) {
 	var doc yaml.Node

@@ -135,7 +135,7 @@ func (m Member) ask(s *Setting, v any, _ Values, _ bool) (any, error) {
 }
 
 // Secret is where a secret's value comes from: a secret.Source. Suggest gives the value to start with for
-// each kind (env, keychain or command). Asked as part of turning a setting on, it starts on command when
+// each kind (env, keyring or command). Asked as part of turning a setting on, it starts on command when
 // the source is an unset environment variable and a command is suggested.
 type Secret struct {
 	Suggest func(v Values) map[string]string
@@ -144,7 +144,7 @@ type Secret struct {
 func (Secret) value(raw any) any {
 	m, _ := raw.(map[string]any)
 	str := func(k string) string { s, _ := m[k].(string); return s }
-	return secret.Source{Keychain: str("keychain"), Command: str("command"), Env: str("env")}
+	return secret.Source{Keyring: str("keyring"), Command: str("command"), Env: str("env")}
 }
 
 func (Secret) show(v any) string {
@@ -166,7 +166,7 @@ func (sec Secret) ask(s *Setting, v any, values Values, fresh bool) (any, error)
 		Description(s.Description).
 		Options(
 			huh.NewOption("An environment variable on the host", "env"),
-			huh.NewOption(capitalize(secret.Keychain()), "keychain"),
+			huh.NewOption(capitalize(secret.Keyring()), "keyring"),
 			huh.NewOption("A command's output", "command"),
 		).
 		Value(&kind))
@@ -180,8 +180,8 @@ func (sec Secret) ask(s *Setting, v any, values Values, fresh bool) (any, error)
 	switch kind {
 	case "env":
 		err = Ask("Environment variable", input)
-	case "keychain":
-		err = Ask("Keychain item (service name)", input.Description("Add it with: "+secret.AddKeychainItem("NAME")))
+	case "keyring":
+		err = Ask("Keyring item (service name)", input.Description("Add it with: "+secret.AddKeyringItem("NAME")))
 	default:
 		err = Ask("Command", input.Description("Run with sh -c on the host; its output is the value"))
 	}
@@ -189,16 +189,16 @@ func (sec Secret) ask(s *Setting, v any, values Values, fresh bool) (any, error)
 	switch kind {
 	case "env":
 		return secret.Source{Env: value}, err
-	case "keychain":
-		return secret.Source{Keychain: value}, err
+	case "keyring":
+		return secret.Source{Keyring: value}, err
 	}
 	return secret.Source{Command: value}, err
 }
 
 func sourceKind(s secret.Source) (kind, value string) {
 	switch {
-	case s.Keychain != "":
-		return "keychain", s.Keychain
+	case s.Keyring != "":
+		return "keyring", s.Keyring
 	case s.Command != "":
 		return "command", s.Command
 	}

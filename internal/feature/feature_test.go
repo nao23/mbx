@@ -44,13 +44,13 @@ func TestAllSecrets(t *testing.T) {
 	cfg := loadConfig(t, `
 		docker:
 		  ecr: {registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com}
-		github: {secret_source: {keychain: gh}}
+		github: {secret_source: {keyring: gh}}
 	`)
 	got := map[string]Secret{}
 	for _, f := range AllSecrets(cfg) {
 		got[f.Secret.Env] = *f.Secret
 	}
-	if s := got["GH_TOKEN"]; s.Source.Keychain != "gh" {
+	if s := got["GH_TOKEN"]; s.Source.Keyring != "gh" {
 		t.Errorf("GH_TOKEN = %+v", s)
 	}
 	if s := got["ECR_TOKEN"]; s.Source.Env != "ECR_TOKEN" {

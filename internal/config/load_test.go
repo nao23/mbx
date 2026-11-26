@@ -129,13 +129,13 @@ func TestChooseErrors(t *testing.T) {
 func TestSecretSourceIsReplaced(t *testing.T) {
 	writeConfig(t, `
 		github:
-		  secret_source: {keychain: my-gh}      # the default is {env: GH_TOKEN}
+		  secret_source: {keyring: my-gh}      # the default is {env: GH_TOKEN}
 	`)
 	cfg, err := Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := cfg.GitHub.SecretSource, (secret.Source{Keychain: "my-gh"}); got != want {
+	if got, want := cfg.GitHub.SecretSource, (secret.Source{Keyring: "my-gh"}); got != want {
 		t.Errorf("github secret_source = %+v, want %+v", got, want)
 	}
 }
@@ -183,7 +183,7 @@ func TestMCPServer(t *testing.T) {
 	writeConfig(t, `
 		mcp_gateway:
 		  servers:
-		    secret: {client_secret_source: {keychain: s}}
+		    secret: {client_secret_source: {keyring: s}}
 		    moved: {url: https://new.example.com/mcp}
 		    own: {url: https://own.example.com/mcp, client_id: mine}
 	`)
@@ -202,7 +202,7 @@ func TestMCPServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, want := range map[string]MCPServer{
-		"secret": {URL: "https://s.example.com/mcp", ClientID: "c1", CallbackPort: 13579, ClientSecretSource: secret.Source{Keychain: "s"}},
+		"secret": {URL: "https://s.example.com/mcp", ClientID: "c1", CallbackPort: 13579, ClientSecretSource: secret.Source{Keyring: "s"}},
 		"moved":  {URL: "https://new.example.com/mcp"},
 		"plain":  {URL: "https://p.example.com/mcp"},
 		"own":    {URL: "https://own.example.com/mcp", ClientID: "mine"},

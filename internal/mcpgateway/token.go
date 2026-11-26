@@ -96,7 +96,7 @@ func hostClaudeAIToken() (string, time.Time, error) {
 	return e.AccessToken, expires, nil
 }
 
-const hostClaudeKeychainItem = "Claude Code-credentials"
+const hostClaudeKeyringItem = "Claude Code-credentials"
 
 func hostClaudeCredentialsFile() string {
 	return filepath.Join(config.HostClaudeDir(), ".credentials.json")
@@ -105,7 +105,7 @@ func hostClaudeCredentialsFile() string {
 // hostClaudeCredentialsPlace says where the host claude keeps its credentials, for mbx mcp status.
 func hostClaudeCredentialsPlace() string {
 	if runtime.GOOS == "darwin" {
-		return secret.Keychain() + ", service " + hostClaudeKeychainItem
+		return secret.Keyring() + ", service " + hostClaudeKeyringItem
 	}
 	return hostClaudeCredentialsFile()
 }
@@ -114,7 +114,7 @@ func hostClaudeCredentialsPlace() string {
 // .credentials.json in ~/.claude.
 func hostClaudeCredentials() ([]byte, error) {
 	if runtime.GOOS == "darwin" {
-		out, err := keyring.Get(hostClaudeKeychainItem, secret.KeychainAccount())
+		out, err := keyring.Get(hostClaudeKeyringItem, secret.KeyringAccount())
 		if err != nil {
 			return nil, fmt.Errorf("read the host claude's credentials from the keychain: %w", err)
 		}

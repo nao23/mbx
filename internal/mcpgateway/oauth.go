@@ -24,7 +24,7 @@ import (
 )
 
 // Login logs in as MCP clients do: discovers the authorization server, registers a client unless
-// client_id is set, has the user authorize in the browser, and saves the tokens in the keychain.
+// client_id is set, has the user authorize in the browser, and saves the tokens in the keyring.
 func Login(name string, s config.MCPServer) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

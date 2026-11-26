@@ -44,7 +44,7 @@ claude setup-token                       # issue a long-lived token
 export CLAUDE_CODE_OAUTH_TOKEN='<token>'  # e.g. in your shell profile
 ```
 
-To keep it out of the environment, store it in the keychain and point `claude.secret_source` at it:
+To keep it out of the environment, store it in the keyring and point `claude.secret_source` at it:
 
 ```sh
 security add-generic-password -s claude-microsandbox-token -a "$USER" -w '<token>'
@@ -52,7 +52,7 @@ security add-generic-password -s claude-microsandbox-token -a "$USER" -w '<token
 
 ```yaml
 claude:
-  secret_source: {keychain: claude-microsandbox-token}
+  secret_source: {keyring: claude-microsandbox-token}
 ```
 
 By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it automatically when it's missing, and rebuilds it when an mbx update has changed the built-in `Dockerfile` (detected by a hash recorded in an image label). The image is built with the host's Docker and loaded into microsandbox. Claude Code is the latest version at build time, so to update it, rebuild with `mbx build --default -- --no-cache`.
@@ -192,7 +192,7 @@ network_extras:
   tls_intercept: []             # domains to intercept TLS for (secret destinations are added automatically)
 
 secret_sources:                 # where the values of secrets in microsandbox_config.secrets come from
-  MY_TOKEN: {keychain: my-token}      # one of keychain / command / env
+  MY_TOKEN: {keyring: my-token}      # one of keyring / command / env
 ```
 
 </details>
@@ -220,7 +220,7 @@ Layered in this order: defaults → the config file → command-line options.
 
 - Maps are merged key by key. Values and lists are replaced by the later one
 - Only `microsandbox_config.network.allow` is appended to instead of replaced
-- `secret_source` (and each entry of `secret_sources`) is replaced whole instead of merged key by key, so `keychain` and `command` don't get mixed
+- `secret_source` (and each entry of `secret_sources`) is replaced whole instead of merged key by key, so `keyring` and `command` don't get mixed
 
 `mbx run claude --show-config` shows the final config, and which file was used and why.
 
@@ -232,11 +232,11 @@ Where a value comes from is written the same way everywhere, in `secret_source` 
 
 | Form | Source |
 |---|---|
-| `{keychain: NAME}` | The keychain item with service name NAME and account the login user (on Linux, in the Secret Service keyring) |
+| `{keyring: NAME}` | The item with service name NAME and account the login user in the keyring: the macOS keychain, or the Secret Service on Linux |
 | `{command: CMD}` | The output of running CMD in a shell |
 | `{env: VAR}` | The host environment variable VAR |
 
-`mbx run` shows each secret as it fetches it (its name, source and destination), so a keychain dialog or a login prompt from a command shows what it's for. If fetching fails and mbx is running in a terminal, it asks for the value by hand: the input isn't echoed, is used for that run only, and an empty input aborts with the original error.
+`mbx run` shows each secret as it fetches it (its name, source and destination), so a keyring dialog or a login prompt from a command shows what it's for. If fetching fails and mbx is running in a terminal, it asks for the value by hand: the input isn't echoed, is used for that run only, and an empty input aborts with the original error.
 
 ### Built-in (claude, ECR, GitHub)
 
@@ -252,7 +252,7 @@ By default these tokens come from the host's environment variables of the same n
 
 ### Your own
 
-Put the name and destination in `microsandbox_config.secrets` (microsandbox's own format), and the source in `secret_sources`. microsandbox's format has no place for `keychain` and the like, hence the two places.
+Put the name and destination in `microsandbox_config.secrets` (microsandbox's own format), and the source in `secret_sources`. microsandbox's format has no place for `keyring` and the like, hence the two places.
 
 ```yaml
 microsandbox_config:
@@ -261,12 +261,12 @@ microsandbox_config:
       allow: [api.example.com]    # destination (added to the allowlist and TLS interception targets automatically)
 
 secret_sources:
-  MY_TOKEN: {keychain: my-token}
+  MY_TOKEN: {keyring: my-token}
 ```
 
 ## MCP servers (the MCP gateway)
 
-claude in the VM can use remote MCP servers and claude.ai connectors. Tokens stay out of the VM: an MCP gateway running on the host (`mbx mcp-gw`) forwards requests with tokens kept in the host's keychain.
+claude in the VM can use remote MCP servers and claude.ai connectors. Tokens stay out of the VM: an MCP gateway running on the host (`mbx mcp-gw`) forwards requests with tokens kept in the host's keyring.
 
 Only remote (HTTP) servers are supported; stdio servers aren't. A stdio server in a repository's `.mcp.json` is started by claude in the VM itself, so it runs if the image has its runtime and the network allows what it needs.
 
@@ -290,7 +290,7 @@ A server in `mcp_servers` is defined by its `mcp_gateway.servers` entry, with wh
 
 There are two kinds of servers, with tokens from different places:
 
-- **`mcp_servers`: mbx's own login.** Log in once with `mbx mcp login example`. mbx finds the server's OAuth authorization server as MCP clients do (its protected resource metadata, then the authorization server's metadata), registers itself as a client by dynamic client registration unless `client_id` is set, and opens the browser to authorize, with PKCE. The redirect goes to `http://localhost:<callback_port>/callback` (a random port by default; servers whose `client_id` was registered with a fixed redirect need that port). The login is saved in the keychain under service `mbx-mcp-gateway`: account `<server>` holds the login (url, client, expiry), and `<server>:access` and `<server>:refresh` the tokens. The gateway refreshes them when they expire. Changing `url` needs a new login
+- **`mcp_servers`: mbx's own login.** Log in once with `mbx mcp login example`. mbx finds the server's OAuth authorization server as MCP clients do (its protected resource metadata, then the authorization server's metadata), registers itself as a client by dynamic client registration unless `client_id` is set, and opens the browser to authorize, with PKCE. The redirect goes to `http://localhost:<callback_port>/callback` (a random port by default; servers whose `client_id` was registered with a fixed redirect need that port). The login is saved in the keyring under service `mbx-mcp-gateway`: account `<server>` holds the login (url, client, expiry), and `<server>:access` and `<server>:refresh` the tokens. The gateway refreshes them when they expire. Changing `url` needs a new login
 - **`claude_ai_connectors`: the host claude's claude.ai token.** claude.ai connectors can only be used with the claude.ai login, so the gateway reads the host claude's token from the keychain (`Claude Code-credentials`) only for these. The gateway doesn't refresh it, so when it expires, use the host's claude once (`mbx mcp` shows expiry). Connectors get the same names in the VM as on the host (`claude_ai_Slack`), so tool names (`mcp__claude_ai_Slack__...`) and permission settings in `settings.json` match the host's. Tools blocked on claude.ai are removed from the list by the gateway, and calls to them are refused
 
 `mbx run` starts the gateway when needed. It reaches each sandbox through a unix socket of its own rather than the network, so the VM holds no credentials and other sandboxes can't use its servers. A custom image needs `socat` for MCP servers.

@@ -95,7 +95,7 @@ mcp_gateway:
   # port the sandbox's socket is exposed on
   port: 41837
   # MCP servers mbx logs in to itself with OAuth (mbx mcp login <name>). Tokens are kept in the
-  # host keychain and refreshed by the gateway. What an entry leaves out comes from the host claude's server
+  # host keyring and refreshed by the gateway. What an entry leaves out comes from the host claude's server
   # of the same name: url, and when the url is the same, client_id and callback_port. So a host claude
   # server needs an entry only for client_secret_source or scope
   servers: {}
