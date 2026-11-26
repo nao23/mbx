@@ -21,6 +21,7 @@ import (
 
 	"github.com/nao23/mbx/internal/config"
 	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/secret"
 	"github.com/nao23/mbx/internal/ui"
 )
 
@@ -211,7 +212,7 @@ func LoginStatus(cfg *config.Config) error {
 		if cfg.MCPGateway.Servers[name].URL != "" {
 			from = "mcp_gateway.servers"
 		}
-		where := fmt.Sprintf("keychain, service %s, account %s", keychainService, name)
+		where := fmt.Sprintf("%s, service %s, account %s", secret.Keychain(), keychainService, name)
 		l, err := loadLogin(name)
 		var ok bool
 		var note string
@@ -242,7 +243,7 @@ func LoginStatus(cfg *config.Config) error {
 		}
 		fmt.Println(st.Bold("claude.ai connectors") + "  " + st.Dim("claude.claude_ai_connectors · the host claude's token"))
 		names := strings.Join(cfg.Claude.ClaudeAIConnectors, ", ")
-		where := [2]string{"credentials", "keychain, service Claude Code-credentials (claudeAiOauth), the host claude's login"}
+		where := [2]string{"credentials", hostClaudeCredentialsPlace() + " (claudeAiOauth), the host claude's login"}
 		if _, expires, err := hostClaudeAIToken(); err != nil {
 			item(false, names, err.Error(), where)
 		} else {

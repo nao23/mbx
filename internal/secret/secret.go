@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime"
 	"strings"
 
 	"github.com/zalando/go-keyring"
@@ -23,6 +24,24 @@ func KeychainAccount() string {
 	return os.Getenv("USER")
 }
 
+// Keychain names the store keychain items are in: the macOS keychain, or on Linux the Secret Service
+// (GNOME Keyring, KWallet, etc.), as go-keyring uses them.
+func Keychain() string {
+	if runtime.GOOS == "darwin" {
+		return "the macOS keychain"
+	}
+	return "the Secret Service keyring"
+}
+
+// AddKeychainItem is the command that adds the keychain item name, for the login user. secret-tool reads
+// the value from stdin.
+func AddKeychainItem(name string) string {
+	if runtime.GOOS == "darwin" {
+		return "security add-generic-password -s " + shell.Quote(name) + ` -a "$USER" -w '<value>'`
+	}
+	return "secret-tool store --label " + shell.Quote(name) + " service " + shell.Quote(name) + ` username "$USER"`
+}
+
 // Source says where a secret value comes from. Set exactly one field
 type Source struct {
 	Keychain string `yaml:"keychain,omitempty"`
@@ -33,6 +52,8 @@ type Source struct {
 // Describe returns the command that fetches the value, for dry-run output.
 func (s Source) Describe() string {
 	switch {
+	case s.Keychain != "" && runtime.GOOS != "darwin":
+		return "secret-tool lookup service " + shell.Quote(s.Keychain) + " username " + shell.Quote(KeychainAccount())
 	case s.Keychain != "":
 		return "security find-generic-password -s " + shell.Quote(s.Keychain) + " -a " + shell.Quote(KeychainAccount()) + " -w"
 	case s.Command != "":
@@ -67,10 +88,10 @@ func (s Source) Fetch(stderr io.Writer) (string, error) {
 		v, err := keyring.Get(s.Keychain, KeychainAccount())
 		if err != nil {
 			return "", fmt.Errorf(
-				"keychain item %s (account %s) not found or not readable (add it with: security add-generic-password -s %s -a \"$USER\" -w '<value>')",
+				"keychain item %s (account %s) not found or not readable (add it with: %s)",
 				shell.Quote(s.Keychain),
 				KeychainAccount(),
-				shell.Quote(s.Keychain),
+				AddKeychainItem(s.Keychain),
 			)
 		}
 		out = []byte(v)

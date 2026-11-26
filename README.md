@@ -232,7 +232,7 @@ Where a value comes from is written the same way everywhere, in `secret_source` 
 
 | Form | Source |
 |---|---|
-| `{keychain: NAME}` | The macOS keychain item with service name NAME and account the login user (as `security add-generic-password -s NAME -a "$USER" -w` makes) |
+| `{keychain: NAME}` | The keychain item with service name NAME and account the login user (on Linux, in the Secret Service keyring) |
 | `{command: CMD}` | The output of running CMD in a shell |
 | `{env: VAR}` | The host environment variable VAR |
 

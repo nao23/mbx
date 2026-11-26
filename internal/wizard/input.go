@@ -166,7 +166,7 @@ func (sec Secret) ask(s *Setting, v any, values Values, fresh bool) (any, error)
 		Description(s.Description).
 		Options(
 			huh.NewOption("An environment variable on the host", "env"),
-			huh.NewOption("The macOS keychain", "keychain"),
+			huh.NewOption(capitalize(secret.Keychain()), "keychain"),
 			huh.NewOption("A command's output", "command"),
 		).
 		Value(&kind))
@@ -181,7 +181,7 @@ func (sec Secret) ask(s *Setting, v any, values Values, fresh bool) (any, error)
 	case "env":
 		err = Ask("Environment variable", input)
 	case "keychain":
-		err = Ask("Keychain item (service name)", input.Description(`Add it with: security add-generic-password -s NAME -a "$USER" -w`))
+		err = Ask("Keychain item (service name)", input.Description("Add it with: "+secret.AddKeychainItem("NAME")))
 	default:
 		err = Ask("Command", input.Description("Run with sh -c on the host; its output is the value"))
 	}
@@ -244,3 +244,5 @@ func orNone(s string) string {
 	}
 	return s
 }
+
+func capitalize(s string) string { return strings.ToUpper(s[:1]) + s[1:] }
