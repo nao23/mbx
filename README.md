@@ -32,6 +32,7 @@ Put these files in the config dir `~/.config/msbx/`:
 | File | Contents |
 |---|---|
 | `config.yaml` | The config (see below) |
+| `<name>.yaml` | (Optional) Configs for some directories, used there instead of `config.yaml` (see below) |
 | `sandbox-prompt.md` | (Optional) Notes appended to the system prompt given to Claude in the VM. msbx always passes a description of the VM environment ([the built-in prompt](internal/agent/sandbox-prompt.md)) and appends the file named in `claude.extra_system_prompt` after it |
 
 Issue a long-lived Claude Code token with `claude setup-token`. By default msbx reads it from the host's `CLAUDE_CODE_OAUTH_TOKEN` environment variable:
@@ -91,7 +92,8 @@ msbx run shell                   # start a shell (bash by default)
 msbx run shell -- make test      # start any command
 msbx run --keep                  # keep the sandbox after exit
 msbx run --dry-run               # only show the steps (runs nothing, fetches no secrets)
-msbx run --show-config           # only show the merged config, with the options applied
+msbx run --show-config           # only show the config used (which file, and why), with the options applied
+msbx run --config ~/work.yaml    # use this config file (any command takes --config)
 ```
 
 | Command | Description |
@@ -112,7 +114,7 @@ Only the `run` that created a sandbox removes it on exit. If you connect to a ru
 
 ## Configuration
 
-The config file is `~/.config/msbx/config.yaml` (override with the `MSBX_CONFIG` environment variable). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml)). The minimal config is just `version: 1`.
+The config file is `~/.config/msbx/config.yaml` (the config dir can be changed with the `MSBX_CONFIG_DIR` environment variable). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml)). The minimal config is just `version: 1`.
 
 The config has a part passed to microsandbox as-is, and msbx's extensions.
 
@@ -189,28 +191,36 @@ network_extras:
 
 secret_sources:                 # where the values of secrets in microsandbox_config.secrets come from
   MY_TOKEN: {keychain: my-token}      # one of keychain / command / env
-
-projects:                       # overrides per working directory
-  ~/src/github.com/example/repo:
-    docker:
-      ecr: {enabled: true}
-    github: {enabled: true}
-    microsandbox_config:
-      memory: 8G
 ```
 
 </details>
 
+### Configs per directory
+
+For directories that need a different config, put another config file in the config dir, with the directories it's used in:
+
+```yaml
+# ~/.config/msbx/work.yaml
+directories: [~/src/github.com/example]   # these directories and everything under them
+docker:
+  ecr: {enabled: true, registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com}
+github: {enabled: true}
+```
+
+- The file whose `directories` has the working directory, or the deepest of its parents, is used. Elsewhere, `config.yaml` is used; it takes no `directories`
+- Only that one file is used. Config files aren't layered over each other, so a file has everything that differs from the defaults
+- A directory in two files is an error, so which file a directory uses is never in doubt
+- `--config FILE` uses that file instead, wherever it is
+
 ### Layering
 
-Layered in this order: defaults → the config file → the `projects:` entries matching the working directory → command-line options.
+Layered in this order: defaults → the config file → command-line options.
 
-- A `projects:` entry applies when it names the working directory or one of its parents. Shallower ones are layered first
 - Maps are merged key by key. Values and lists are replaced by the later one
 - Only `microsandbox_config.network.allow` is appended to instead of replaced
 - `secret_source` (and each entry of `secret_sources`) is replaced whole instead of merged key by key, so `keychain` and `command` don't get mixed
 
-`msbx run --show-config` shows the final config.
+`msbx run --show-config` shows the final config, and which file was used and why.
 
 ## Secrets
 

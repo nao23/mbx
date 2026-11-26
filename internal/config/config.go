@@ -16,6 +16,7 @@ import (
 // Config is the merged config. Microsandbox and MicrosandboxFlags are passed to msb uninterpreted
 type Config struct {
 	Version           int                      `yaml:"version"`
+	Directories       []string                 `yaml:"directories"`
 	Agent             string                   `yaml:"agent"`
 	Command           []string                 `yaml:"command"`
 	Keep              bool                     `yaml:"keep"`
@@ -38,7 +39,8 @@ type Config struct {
 		Servers map[string]MCPServer `yaml:"servers"`
 	} `yaml:"mcp_gateway"`
 
-	dir string // relative paths in the config resolve against it
+	dir       string // relative paths in the config resolve against it
+	path, why string // the config file, and why it was chosen
 }
 
 type ClaudeConfig struct {
@@ -86,13 +88,20 @@ type GitHubConfig struct {
 	Allow          []string      `yaml:"allow"`
 }
 
-func Path() string {
-	if p := os.Getenv("MSBX_CONFIG"); p != "" {
-		return p
+// DefaultFile is the config file used where no other file's directories has the workspace
+const DefaultFile = "config.yaml"
+
+// Dir is the config dir, which holds the config files
+func Dir() string {
+	if d := os.Getenv("MSBX_CONFIG_DIR"); d != "" {
+		return d
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "msbx", "config.yaml")
+	return filepath.Join(home, ".config", "msbx")
 }
+
+// File returns the config file loaded and why it was chosen
+func (c *Config) File() (path, why string) { return c.path, c.why }
 
 func (c *Config) Image() string {
 	s, _ := c.Microsandbox["image"].(string)

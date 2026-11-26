@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 func loadConfig(t *testing.T, yamlText, workspace string) *config.Config {
 	t.Helper()
 	testutil.WriteConfig(t, yamlText)
-	cfg, err := config.Load(workspace)
+	cfg, err := config.Load(workspace, "")
 	if err != nil {
 		t.Fatal(err)
 	}

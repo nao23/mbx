@@ -1,5 +1,9 @@
-# Built-in defaults. The config file (~/.config/msbx/config.yaml) is layered on top
+# Built-in defaults. One config file from the config dir (~/.config/msbx) is layered on top
 version: 1
+
+# The directories this file is used in, subdirectories included (absolute, or starting with ~). Every file
+# but config.yaml lists some; config.yaml is used where no other file does
+directories: []
 
 # What run starts when not given on the command line: claude, or shell (starts command)
 agent: claude

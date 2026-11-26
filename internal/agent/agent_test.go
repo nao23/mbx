@@ -17,7 +17,7 @@ func loadConfig(t *testing.T, yamlText string) *config.Config {
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
 	testutil.WriteConfig(t, yamlText)
-	cfg, err := config.Load("/work")
+	cfg, err := config.Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}

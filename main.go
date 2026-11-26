@@ -28,10 +28,12 @@ func newRootCmd() *cobra.Command {
 		Long: `msbx runs a coding agent (or a shell) in a microsandbox microVM, with the current directory mounted
 at the same path as on the host.
 
-Config file: ~/.config/msbx/config.yaml (override with the MSBX_CONFIG env var)`,
+Config files are in ~/.config/msbx (override with the MSBX_CONFIG_DIR env var): the one whose directories
+has the current directory, else config.yaml. --config gives one instead.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	root.PersistentFlags().StringVar(&configFile, "config", "", "the config file to use, instead of the one for the current directory")
 	root.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
 		return fmt.Errorf("%w (see %s --help)", err, cmd.CommandPath())
 	})
@@ -47,6 +49,9 @@ Config file: ~/.config/msbx/config.yaml (override with the MSBX_CONFIG env var)`
 	)
 	return root
 }
+
+// configFile is --config: the config file to use instead of choosing one by directory
+var configFile string
 
 type runOptions struct {
 	name, agent                                     string
@@ -118,7 +123,8 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 				if err != nil {
 					return err
 				}
-				fmt.Printf("# Config file: %s\n# Workspace: %s\n\n%s", config.Path(), workspace, out)
+				path, why := cfg.File()
+				fmt.Printf("# Config file: %s\n#   (%s)\n\n%s", path, why, out)
 				return nil
 			}
 			code, err := sb.Run(o.rest)
@@ -151,7 +157,7 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 
 // setup applies the command-line options over the config.
 func setup(o runOptions, workspace string) (*config.Config, *sandbox.Sandbox, error) {
-	cfg, err := config.Load(workspace)
+	cfg, err := config.Load(workspace, configFile)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -251,7 +257,7 @@ hosts; to add or remove secrets, recreate the sandbox.`,
 			if err != nil {
 				return err
 			}
-			cfg, err := config.Load(workspace)
+			cfg, err := config.Load(workspace, configFile)
 			if err != nil {
 				return err
 			}
@@ -281,7 +287,7 @@ Docker, and load it into microsandbox.`,
 // withConfig runs fn with the config for the current directory.
 func withConfig(fn func(cfg *config.Config) error) error {
 	wd, _ := os.Getwd()
-	cfg, err := config.Load(wd)
+	cfg, err := config.Load(wd, configFile)
 	if err != nil {
 		return err
 	}

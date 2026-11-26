@@ -25,8 +25,8 @@ func allowList(cfg *Config) []string {
 
 // Without a config file, the embedded defaults apply
 func TestLoadDefaults(t *testing.T) {
-	t.Setenv("MSBX_CONFIG", filepath.Join(t.TempDir(), "missing.yaml"))
-	cfg, err := Load("/work")
+	t.Setenv("MSBX_CONFIG_DIR", t.TempDir())
+	cfg, err := Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,113 +34,123 @@ func TestLoadDefaults(t *testing.T) {
 		!cfg.Docker.Enabled || cfg.Claude.SecretSource.Env != "CLAUDE_CODE_OAUTH_TOKEN" {
 		t.Errorf("unexpected defaults: %+v", cfg)
 	}
-}
-
-// projects entries for the workspace and its parents are merged, deepest last; network.allow is appended
-// and other lists replaced
-func TestLoadProjects(t *testing.T) {
-	writeConfig(t, `
-		version: 1
-		microsandbox_config:
-		  memory: 4G
-		  network:
-		    allow: [a.example.com]
-		projects:
-		  /work/repo:                     # deepest, applied last
-		    microsandbox_config:
-		      memory: 16G
-		      network: {allow: [c.example.com]}
-		  /work:
-		    agent: shell
-		    microsandbox_config:
-		      memory: 8G
-		      network: {allow: [b.example.com, a.example.com]}
-		  /work/repo2:                    # a sibling with a common prefix, not a parent
-		    keep: true
-	`)
-	cfg, err := Load("/work/repo/sub")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := cfg.Microsandbox["memory"]; got != "16G" {
-		t.Errorf("memory = %v, want 16G (deepest project wins)", got)
-	}
-	if cfg.Agent != "shell" {
-		t.Errorf("agent = %q, want shell (from the parent project)", cfg.Agent)
-	}
-	if cfg.Keep {
-		t.Error("keep = true; projects./work/repo2 shouldn't match /work/repo/sub")
-	}
-	if got, want := allowList(cfg), []string{"a.example.com", "b.example.com", "c.example.com"}; !slices.Equal(got, want) {
-		t.Errorf("network.allow = %v, want %v (appended without duplicates)", got, want)
-	}
-
-	// A list other than network.allow is replaced
-	writeConfig(t, `
-		command: [zsh, -l]
-		projects:
-		  /work: {command: [fish]}
-	`)
-	cfg, err = Load("/work")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !slices.Equal(cfg.Command, []string{"fish"}) {
-		t.Errorf("command = %v, want [fish]", cfg.Command)
+	if _, why := cfg.File(); !strings.Contains(why, "the defaults alone") {
+		t.Errorf("why = %q, want it to say the defaults alone apply", why)
 	}
 }
 
-// A projects key starting with ~ matches the workspace under the home dir
-func TestLoadProjectsExpandsHome(t *testing.T) {
-	writeConfig(t, `
-		projects:
-		  ~/src/repo: {keep: true}
+// addConfig writes another config file into the config dir.
+func addConfig(t *testing.T, dir, name, yamlText string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte(testutil.Dedent(yamlText)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// The file whose directories has the workspace or the deepest of its parents is used, else config.yaml. Only
+// that one is layered over the defaults: network.allow is appended to the defaults', other lists replaced
+func TestLoadChoosesByDirectory(t *testing.T) {
+	dir := writeConfig(t, "agent: shell\n")
+	work := addConfig(t, dir, "work.yaml", `
+		directories: [/work]
+		command: [fish]
+		microsandbox_config: {network: {allow: [a.example.com]}}
 	`)
+	repo := addConfig(t, dir, "repo.yaml", "directories: [/work/repo, ~/src/repo]\nkeep: true\n")
+	addConfig(t, dir, "notes.md", "not a config file\n")
 	home, _ := os.UserHomeDir()
-	cfg, err := Load(filepath.Join(home, "src", "repo"))
-	if err != nil {
-		t.Fatal(err)
+
+	for workspace, want := range map[string]string{
+		"/work/repo/sub":                   repo,
+		"/work/repo2":                      work, // a sibling with a common prefix, not a subdirectory
+		"/work":                            work,
+		filepath.Join(home, "src", "repo"): repo,
+		"/other":                           filepath.Join(dir, "config.yaml"),
+	} {
+		cfg, err := Load(workspace, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, why := cfg.File(); got != want {
+			t.Errorf("%s: file = %s (%s), want %s", workspace, got, why, want)
+		}
 	}
-	if !cfg.Keep {
-		t.Error("projects key with ~ didn't match")
+
+	cfg, _ := Load("/work/repo", "")
+	if cfg.Agent != "claude" || !cfg.Keep {
+		t.Errorf("agent = %q, keep = %v; want claude (config.yaml isn't layered) and true", cfg.Agent, cfg.Keep)
+	}
+	cfg, _ = Load("/work", "")
+	if !slices.Equal(cfg.Command, []string{"fish"}) || !slices.Equal(allowList(cfg), []string{"a.example.com"}) {
+		t.Errorf("command = %v, network.allow = %v", cfg.Command, allowList(cfg))
 	}
 }
 
-// A secret source replaces the default or a parent's whole, rather than merging with it
+// --config uses the file given, wherever it is and whatever its directories; a missing one is an error
+func TestLoadGivenFile(t *testing.T) {
+	writeConfig(t, "agent: shell\n")
+	given := addConfig(t, t.TempDir(), "other.yaml", "directories: [/elsewhere]\nkeep: true\n")
+	cfg, err := Load("/work", given)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := cfg.File(); got != given || !cfg.Keep || cfg.Agent != "claude" {
+		t.Errorf("file = %s, keep = %v, agent = %q", got, cfg.Keep, cfg.Agent)
+	}
+	if _, err := Load("/work", filepath.Join(t.TempDir(), "missing.yaml")); err == nil {
+		t.Error("missing --config file: want an error")
+	}
+}
+
+// Ambiguous or misplaced directories are errors whichever the workspace, and so is the old projects:
+func TestChooseErrors(t *testing.T) {
+	for _, tc := range []struct{ name, config, other, want string }{
+		{"in two files", "", "directories: [/a/b]\n", "/a/b is in both"},
+		{"config.yaml with directories", "directories: [/x]\n", "", "takes none"},
+		{"another file without them", "", "keep: true\n", "list the directories"},
+		{"a relative directory", "", "directories: [repo]\n", "isn't an absolute path"},
+		{"projects", "projects: {/work: {keep: true}}\n", "", "projects: is no longer supported"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := writeConfig(t, tc.config)
+			addConfig(t, dir, "a.yaml", "directories: [/a/b]\n")
+			if tc.other != "" {
+				addConfig(t, dir, "b.yaml", tc.other)
+			}
+			if _, err := Load("/elsewhere", ""); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("err = %v, want one mentioning %q", err, tc.want)
+			}
+		})
+	}
+}
+
+// A secret source replaces the default whole, rather than merging with it
 func TestSecretSourceIsReplaced(t *testing.T) {
 	writeConfig(t, `
 		github:
 		  secret_source: {keychain: my-gh}      # the default is {env: GH_TOKEN}
-		secret_sources:
-		  MY_TOKEN: {keychain: my-token}
-		projects:
-		  /work:
-		    secret_sources:
-		      MY_TOKEN: {env: MY_TOKEN_VALUE}
 	`)
-	cfg, err := Load("/work")
+	cfg, err := Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got, want := cfg.GitHub.SecretSource, (secret.Source{Keychain: "my-gh"}); got != want {
 		t.Errorf("github secret_source = %+v, want %+v", got, want)
 	}
-	if got, want := cfg.SecretSources["MY_TOKEN"], (secret.Source{Env: "MY_TOKEN_VALUE"}); got != want {
-		t.Errorf("secret_sources.MY_TOKEN = %+v, want %+v", got, want)
-	}
 }
 
-// Unknown keys (nested too), a non-map project and broken YAML are errors naming the problem
+// Unknown keys (nested too) and broken YAML are errors naming the problem
 func TestLoadErrors(t *testing.T) {
 	for _, tc := range []struct{ name, yaml, want string }{
 		{"unknown key", "agnet: shell\n", "agnet"},
 		{"unknown nested key", "docker: {enable: false}\n", "enable"},
-		{"project not a map", "projects:\n  /work: true\n", "projects./work must be a map"},
 		{"broken yaml", "agent: [\n", "config.yaml"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			writeConfig(t, tc.yaml)
-			_, err := Load("/work")
+			_, err := Load("/work", "")
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Errorf("err = %v, want one mentioning %q", err, tc.want)
 			}
@@ -151,7 +161,7 @@ func TestLoadErrors(t *testing.T) {
 // Relative paths in the config are resolved from the config dir; ~ and absolute paths as usual
 func TestResolve(t *testing.T) {
 	dir := writeConfig(t, "version: 1\n")
-	cfg, err := Load("/work")
+	cfg, err := Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +198,7 @@ func TestMCPServer(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(home, ".claude.json"), []byte(hostJSON), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := Load("/work")
+	cfg, err := Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}
