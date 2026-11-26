@@ -15,8 +15,8 @@ import (
 
 	"github.com/zalando/go-keyring"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/msb"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/msb"
 )
 
 // Tests run no external commands: the keychain is go-keyring's in-memory mock, the browser is a plain
@@ -152,7 +152,7 @@ func TestLoginWithDynamicRegistration(t *testing.T) {
 	if err := Logout("fake"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := tokenCacheFor("fake").get(); err == nil || !strings.Contains(err.Error(), "msbx mcp login fake") {
+	if _, err := tokenCacheFor("fake").get(); err == nil || !strings.Contains(err.Error(), "mbx mcp login fake") {
 		t.Errorf("get after logout: err = %v, want one saying to log in", err)
 	}
 }
@@ -176,7 +176,7 @@ func TestLoginWithClientID(t *testing.T) {
 	}
 }
 
-// run refuses a server msbx isn't logged in to, or logged in to at another URL
+// run refuses a server mbx isn't logged in to, or logged in to at another URL
 func TestSetupRequiresLogin(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	cfg := &config.Config{}
@@ -191,7 +191,7 @@ func TestSetupRequiresLogin(t *testing.T) {
 			saveLogin("example", l)
 		}
 		_, err := Setup(&msb.Runner{DryRun: true}, cfg, "sb", []string{"example"})
-		if err == nil || !strings.Contains(err.Error(), "msbx mcp login example") {
+		if err == nil || !strings.Contains(err.Error(), "mbx mcp login example") {
 			t.Errorf("%s: err = %v, want one saying to log in", name, err)
 		}
 	}

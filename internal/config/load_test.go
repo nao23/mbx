@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nao23/msbx/internal/secret"
-	"github.com/nao23/msbx/internal/testutil"
+	"github.com/nao23/mbx/internal/secret"
+	"github.com/nao23/mbx/internal/testutil"
 )
 
 // writeConfig writes a config file (see testutil.WriteConfig) and returns its dir. HOME is a temp dir too.
@@ -25,12 +25,12 @@ func allowList(cfg *Config) []string {
 
 // Without a config file, the embedded defaults apply
 func TestLoadDefaults(t *testing.T) {
-	t.Setenv("MSBX_CONFIG_DIR", t.TempDir())
+	t.Setenv("MBX_CONFIG_DIR", t.TempDir())
 	cfg, err := Load("/work", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Agent != "claude" || cfg.Image() != "msbx-default:latest" || cfg.MCPGateway.Port != 41837 ||
+	if cfg.Agent != "claude" || cfg.Image() != "mbx-default:latest" || cfg.MCPGateway.Port != 41837 ||
 		!cfg.Docker.Enabled || cfg.Claude.SecretSource.Env != "CLAUDE_CODE_OAUTH_TOKEN" {
 		t.Errorf("unexpected defaults: %+v", cfg)
 	}

@@ -10,12 +10,12 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/nao23/msbx/internal/agent"
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/secret"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/agent"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/secret"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 // resolveSecrets fetches secret values on the host into this process's environment, which msb inherits.

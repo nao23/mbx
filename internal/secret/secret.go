@@ -12,7 +12,7 @@ import (
 
 	"github.com/zalando/go-keyring"
 
-	"github.com/nao23/msbx/internal/shell"
+	"github.com/nao23/mbx/internal/shell"
 )
 
 // KeychainAccount is the login user, the account `security add-generic-password -a "$USER"` and Claude Code use.

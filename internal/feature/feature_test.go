@@ -13,9 +13,9 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/testutil"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/testutil"
 )
 
 // Tests run no external commands: git config finds nothing unless a test fakes it (fakeGit), and PATH

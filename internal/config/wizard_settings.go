@@ -7,10 +7,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/nao23/msbx/internal/wizard"
+	"github.com/nao23/mbx/internal/wizard"
 )
 
-// wizardSettings lists the settings in msbx config edit's menu, in its order. cur is the config being edited.
+// wizardSettings lists the settings in mbx config edit's menu, in its order. cur is the config being edited.
 func wizardSettings(cur *Config) []wizard.Setting {
 	github := func(v wizard.Values) bool { return v.Bool("github.enabled") }
 	docker := func(v wizard.Values) bool { return v.Bool("docker.enabled") }
@@ -49,7 +49,7 @@ func wizardSettings(cur *Config) []wizard.Setting {
 		},
 		{
 			Name: "MCP servers", Path: "claude.mcp_servers", Title: "MCP servers to use",
-			Description: "Through the MCP gateway, with msbx's own logins (msbx mcp login). From the host's ~/.claude.json and mcp_gateway.servers",
+			Description: "Through the MCP gateway, with mbx's own logins (mbx mcp login). From the host's ~/.claude.json and mcp_gateway.servers",
 			Show: func(v wizard.Values) bool {
 				return len(servers) > 0 || len(v.List("claude.mcp_servers")) > 0
 			},
@@ -112,7 +112,7 @@ func wizardSettings(cur *Config) []wizard.Setting {
 		},
 		{
 			Name: "Domains", Path: "microsandbox_config.network.allow", Title: "More domains to allow",
-			Description: "One per line (*.example.com for subdomains). What the agent and the features above need is added by msbx",
+			Description: "One per line (*.example.com for subdomains). What the agent and the features above need is added by mbx",
 			Input:       wizard.Lines{},
 		},
 	}

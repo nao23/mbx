@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/nao23/msbx/internal/config"
+	"github.com/nao23/mbx/internal/config"
 )
 
 // fakeGit points HOME at a new temp dir and makes gitConfig answer as git would for a global gitconfig

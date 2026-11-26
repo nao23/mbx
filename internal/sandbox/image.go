@@ -10,18 +10,18 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/shell"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/shell"
 )
 
-// DefaultImage is built by msbx from its own Dockerfile; any other image is left to microsandbox to pull.
-const DefaultImage = "msbx-default:latest"
+// DefaultImage is built by mbx from its own Dockerfile; any other image is left to microsandbox to pull.
+const DefaultImage = "mbx-default:latest"
 
 //go:embed Dockerfile
 var dockerfile string
 
 // labelDockerfile holds the hash of the Dockerfile the image was built from.
-const labelDockerfile = "msbx.dockerfile"
+const labelDockerfile = "mbx.dockerfile"
 
 // dockerfileHash skips comments and blank lines, so editing comments doesn't trigger a rebuild.
 func dockerfileHash() string {
@@ -41,7 +41,7 @@ func defaultImageOutdated() string {
 	case !ok:
 		return DefaultImage + " is missing"
 	case labels[labelDockerfile] != dockerfileHash():
-		return DefaultImage + " was built from another version of msbx's Dockerfile"
+		return DefaultImage + " was built from another version of mbx's Dockerfile"
 	}
 	return ""
 }
@@ -57,7 +57,7 @@ func rebuild(r *msb.Runner) error {
 	args := []string{"build", "--platform", "linux/arm64", "--label", labelDockerfile + "=" + dockerfileHash(), "-t", image, "-"}
 	if r.DryRun {
 		r.Show("docker", args...)
-		fmt.Println("  < (msbx's built-in Dockerfile)")
+		fmt.Println("  < (mbx's built-in Dockerfile)")
 		fmt.Printf("docker save %s | msb load -t %s\n", shell.Quote(image), shell.Quote(image))
 		return nil
 	}

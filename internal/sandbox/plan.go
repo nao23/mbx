@@ -11,11 +11,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/nao23/msbx/internal/agent"
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/agent"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 type plan struct {
@@ -25,7 +25,7 @@ type plan struct {
 	ipRules []string // in net, collapsed in dry-run output
 }
 
-// Single-valued flags msbx sets itself; microsandbox_flags can't override them
+// Single-valued flags mbx sets itself; microsandbox_flags can't override them
 var reservedFlags = []string{"name", "conf", "net-conf", "workdir"}
 
 // microsandboxFlags passes microsandbox_flags uninterpreted: a list repeats the flag, true is a bare flag,
@@ -41,7 +41,7 @@ func microsandboxFlags(cfg *config.Config) ([]msb.Flag, error) {
 	for _, k := range names {
 		name := strings.TrimPrefix(k, "--")
 		if slices.Contains(reservedFlags, name) {
-			return nil, fmt.Errorf("microsandbox_flags: --%s is set by msbx and can't be overridden", name)
+			return nil, fmt.Errorf("microsandbox_flags: --%s is set by mbx and can't be overridden", name)
 		}
 		switch v := cfg.MicrosandboxFlags[k].(type) {
 		case nil:
@@ -90,9 +90,9 @@ func buildPlan(cfg *config.Config, workspace, name string, gateway *mcpgateway.R
 	// The workspace is mounted at the host's path, so its session directory (projects/<path>) matches the host's
 	flags := []msb.Flag{
 		{Name: "--name", Value: name, Note: "Sandbox"},
-		{Name: "--label", Value: labelMsbx + "=1", Note: "Labels that mark it as msbx's, for msbx ls"},
-		{Name: "--label", Value: labelAgent + "=" + cfg.Agent, Note: "Labels that mark it as msbx's, for msbx ls"},
-		{Name: "--label", Value: labelWorkspace + "=" + workspace, Note: "Labels that mark it as msbx's, for msbx ls"},
+		{Name: "--label", Value: labelMbx + "=1", Note: "Labels that mark it as mbx's, for mbx ls"},
+		{Name: "--label", Value: labelAgent + "=" + cfg.Agent, Note: "Labels that mark it as mbx's, for mbx ls"},
+		{Name: "--label", Value: labelWorkspace + "=" + workspace, Note: "Labels that mark it as mbx's, for mbx ls"},
 		{Name: "--volume", Value: workspace + ":" + workspace, Note: "Workspace (same path as on the host)"},
 		{Name: "--workdir", Value: workspace, Note: "Workspace (same path as on the host)"},
 	}
@@ -165,7 +165,7 @@ func create(r *msb.Runner, cfg *config.Config, p plan, workspace, name string) e
 		return err
 	}
 
-	dir, err := os.MkdirTemp("", "msbx")
+	dir, err := os.MkdirTemp("", "mbx")
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func create(r *msb.Runner, cfg *config.Config, p plan, workspace, name string) e
 		msb.OnHost,
 		"Write the config files for msb create",
 		"sandbox.yaml: the microsandbox_config: section of the config (except network), passed through as-is",
-		"network.yaml: microsandbox_config.network plus the entries msbx adds",
+		"network.yaml: microsandbox_config.network plus the entries mbx adds",
 	)
 	// Written even in dry-run mode, to show their contents
 	if r.DryRun {

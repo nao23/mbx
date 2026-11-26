@@ -9,14 +9,14 @@ import (
 )
 
 // WriteConfig writes yamlText, dedented so it can be indented with the test code, as config.yaml in a new
-// config dir and points MSBX_CONFIG_DIR at it. It returns the config dir.
+// config dir and points MBX_CONFIG_DIR at it. It returns the config dir.
 func WriteConfig(t *testing.T, yamlText string) string {
 	t.Helper()
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(Dedent(yamlText)), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("MSBX_CONFIG_DIR", dir)
+	t.Setenv("MBX_CONFIG_DIR", dir)
 	return dir
 }
 

@@ -13,11 +13,11 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/shell"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/shell"
 )
 
 //go:embed sandbox-prompt.md
@@ -247,7 +247,7 @@ func (c *claude) claudeJSONSeed(workspace string, gateway *mcpgateway.Registrati
 func (c *claude) Command(r *msb.Runner, args []string) ([]string, string) {
 	r.Step(msb.OnVM, "Start claude", "The global CLAUDE.md is written for the host, so append a description of the sandbox to the system prompt")
 	// dry-run shows where the long prompt comes from instead of its contents
-	prompt, shownPrompt := sandboxPrompt, "<msbx's built-in prompt"
+	prompt, shownPrompt := sandboxPrompt, "<mbx's built-in prompt"
 	if p := c.cfg.Resolve(c.cfg.Claude.ExtraSystemPrompt); p != "" {
 		extra, err := os.ReadFile(p)
 		if err != nil {

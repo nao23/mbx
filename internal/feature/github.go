@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nao23/msbx/internal/config"
+	"github.com/nao23/mbx/internal/config"
 )
 
 //go:embed github.sh

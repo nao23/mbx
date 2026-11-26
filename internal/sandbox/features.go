@@ -1,10 +1,10 @@
 package sandbox
 
 import (
-	"github.com/nao23/msbx/internal/agent"
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/agent"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/mcpgateway"
 )
 
 // features returns the agent's and the enabled features' additions, the agent's first. gateway may be nil.

@@ -3,7 +3,7 @@ package feature
 import (
 	_ "embed"
 
-	"github.com/nao23/msbx/internal/config"
+	"github.com/nao23/mbx/internal/config"
 )
 
 //go:embed uv.sh

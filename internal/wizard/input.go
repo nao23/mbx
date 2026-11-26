@@ -8,7 +8,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 
-	"github.com/nao23/msbx/internal/secret"
+	"github.com/nao23/mbx/internal/secret"
 )
 
 // Input is how a setting's value is taken from the config, shown in the menu, and asked.

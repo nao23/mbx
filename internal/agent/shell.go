@@ -1,10 +1,10 @@
 package agent
 
 import (
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/shell"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/shell"
 )
 
 type shellAgent struct {

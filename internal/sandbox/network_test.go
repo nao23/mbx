@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/nao23/msbx/internal/config"
+	"github.com/nao23/mbx/internal/config"
 )
 
 // The network config merges the user's with the features' hosts and rules in order, bypasses TLS only for

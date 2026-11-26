@@ -8,16 +8,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/testutil"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/testutil"
 )
 
 // The host's ~/.claude is empty unless a test creates files with hostClaude. PATH is empty so no external
 // command runs (git config, called by the git feature, then finds nothing)
 func TestMain(m *testing.M) {
-	home, err := os.MkdirTemp("", "msbx-test-home")
+	home, err := os.MkdirTemp("", "mbx-test-home")
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func flagValues(flags []msb.Flag, name string) []string {
 }
 
 // validate rejects bad ECR settings, an empty image, MCP servers not in mcp_gateway.servers (or connectors
-// listed there), flags msbx sets itself, and the msbx- script prefix
+// listed there), flags mbx sets itself, and the mbx- script prefix
 func TestValidate(t *testing.T) {
 	for _, tc := range []struct{ name, yaml, want string }{
 		{"ok", "version: 1\n", ""},
@@ -81,9 +81,9 @@ func TestValidate(t *testing.T) {
 		{"mcp server defined", "claude: {mcp_servers: [g]}\nmcp_gateway: {servers: {g: {url: https://g.example.com/mcp}}}\n", ""},
 		{"mcp server not defined", "claude: {mcp_servers: [g]}\n", "has no url"},
 		{"connector in mcp_servers", "claude: {mcp_servers: [\"claudeai:Slack\"]}\n", "claude.claude_ai_connectors (as Slack)"},
-		{"reserved flag", "microsandbox_flags: {workdir: /tmp}\n", "--workdir is set by msbx"},
-		{"reserved flag with dashes", "microsandbox_flags: {--name: x}\n", "--name is set by msbx"},
-		{"reserved script", "microsandbox_config: {scripts: {msbx-mine: echo}}\n", "msbx- prefix is reserved"},
+		{"reserved flag", "microsandbox_flags: {workdir: /tmp}\n", "--workdir is set by mbx"},
+		{"reserved flag with dashes", "microsandbox_flags: {--name: x}\n", "--name is set by mbx"},
+		{"reserved script", "microsandbox_config: {scripts: {mbx-mine: echo}}\n", "mbx- prefix is reserved"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validate(loadConfig(t, tc.yaml, "/work"))
@@ -185,7 +185,7 @@ func TestBuildPlanShell(t *testing.T) {
 	if got := flagValues(p.flags, "--name"); !slices.Equal(got, []string{"shell-repo"}) {
 		t.Errorf("--name = %v", got)
 	}
-	if got := flagValues(p.flags, "--label"); !slices.Equal(got, []string{"msbx=1", "msbx.agent=shell", "msbx.workspace=/work/repo"}) {
+	if got := flagValues(p.flags, "--label"); !slices.Equal(got, []string{"mbx=1", "mbx.agent=shell", "mbx.workspace=/work/repo"}) {
 		t.Errorf("--label = %v", got)
 	}
 	if got := flagValues(p.flags, "--volume"); !slices.Equal(got, []string{"/work/repo:/work/repo"}) {
@@ -249,7 +249,7 @@ func TestBuildPlanClaude(t *testing.T) {
 		t.Errorf("--mount-owned = %v, want none with docker disabled", got)
 	}
 	// The MCP gateway is reached through its socket for this sandbox, relayed by socat in the VM, not the network
-	if got, want := flagValues(p.flags, "--vsock"), []string{home + "/.local/state/msbx/mcp-gateway/s/ab12cd34.sock:41837"}; !slices.Equal(got, want) {
+	if got, want := flagValues(p.flags, "--vsock"), []string{home + "/.local/state/mbx/mcp-gateway/s/ab12cd34.sock:41837"}; !slices.Equal(got, want) {
 		t.Errorf("--vsock = %v, want %v", got, want)
 	}
 	if s := p.conf["scripts"].(map[string]any)[setupScriptName].(string); !strings.Contains(s, "VSOCK-CONNECT:2:41837") {
@@ -383,7 +383,7 @@ func TestIsIPRule(t *testing.T) {
 	}
 }
 
-// The default image in defaults.yaml is the one msbx builds
+// The default image in defaults.yaml is the one mbx builds
 func TestDefaultImage(t *testing.T) {
 	if got := loadConfig(t, "version: 1\n", "/work").Image(); got != DefaultImage {
 		t.Errorf("default image = %q, want %q", got, DefaultImage)

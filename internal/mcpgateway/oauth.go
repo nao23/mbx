@@ -17,9 +17,9 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/secret"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/secret"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 // Login logs in as MCP clients do: discovers the authorization server, registers a client unless
@@ -95,11 +95,11 @@ func Login(name string, s config.MCPServer) error {
 			return
 		case q.Get("error") != "":
 			errs <- fmt.Errorf("authorization failed: %s %s", q.Get("error"), q.Get("error_description"))
-			fmt.Fprintln(w, "msbx: authorization failed; see the terminal.")
+			fmt.Fprintln(w, "mbx: authorization failed; see the terminal.")
 			return
 		}
 		codes <- q.Get("code")
-		fmt.Fprintf(w, "msbx: logged in to %s. You can close this tab.\n", name)
+		fmt.Fprintf(w, "mbx: logged in to %s. You can close this tab.\n", name)
 	})}
 	for _, l := range listeners {
 		go srv.Serve(l)
@@ -176,7 +176,7 @@ func discover(ctx context.Context, serverURL string) (*authServer, string, error
 
 	// The server answers an unauthenticated request with 401, naming its metadata
 	challenge := map[string]string{}
-	body := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"msbx","version":"1"}}}`
+	body := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"mbx","version":"1"}}}`
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, serverURL, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
@@ -256,10 +256,10 @@ func getJSON(ctx context.Context, urls []string, v any) bool {
 	return false
 }
 
-// registerClient registers msbx as a public client (RFC 7591).
+// registerClient registers mbx as a public client (RFC 7591).
 func registerClient(ctx context.Context, endpoint, redirect, scope string) (id, secret string, err error) {
 	reg := map[string]any{
-		"client_name":                "msbx",
+		"client_name":                "mbx",
 		"redirect_uris":              []string{redirect},
 		"grant_types":                []string{"authorization_code", "refresh_token"},
 		"response_types":             []string{"code"},

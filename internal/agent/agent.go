@@ -1,14 +1,14 @@
-// Package agent holds what msbx runs in a sandbox: claude or a shell.
+// Package agent holds what mbx runs in a sandbox: claude or a shell.
 package agent
 
 import (
 	"fmt"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 type Agent interface {

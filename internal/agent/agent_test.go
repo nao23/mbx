@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/testutil"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/testutil"
 )
 
 // loadConfig loads yamlText as the config file (see testutil.WriteConfig), with an empty host ~/.claude.
@@ -68,7 +68,7 @@ func TestClaudeCommand(t *testing.T) {
 	if want := []string{"claude", "--append-system-prompt", sandboxPrompt, "-p", "hi there"}; !slices.Equal(got, want) {
 		t.Errorf("Command = %v, want %v", got, want)
 	}
-	if want := "claude --append-system-prompt <msbx's built-in prompt> -p 'hi there'"; shown != want {
+	if want := "claude --append-system-prompt <mbx's built-in prompt> -p 'hi there'"; shown != want {
 		t.Errorf("shown = %q, want %q", shown, want)
 	}
 
@@ -88,7 +88,7 @@ func TestClaudeCommand(t *testing.T) {
 	if want := []string{"claude", "--append-system-prompt", sandboxPrompt}; !slices.Equal(got, want) {
 		t.Errorf("Command with a missing extra prompt = %v, want the built-in prompt only", got)
 	}
-	if want := "claude --append-system-prompt <msbx's built-in prompt + contents of /nonexistent/prompt.md>"; shown != want {
+	if want := "claude --append-system-prompt <mbx's built-in prompt + contents of /nonexistent/prompt.md>"; shown != want {
 		t.Errorf("shown = %q, want %q", shown, want)
 	}
 }

@@ -1,4 +1,4 @@
-// msbx runs a coding agent (or a shell) in a microsandbox microVM.
+// mbx runs a coding agent (or a shell) in a microsandbox microVM.
 package main
 
 import (
@@ -10,25 +10,25 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/sandbox"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/sandbox"
+	"github.com/nao23/mbx/internal/ui"
 )
 
-// exitCode carries the agent's exit code out of a command, so msbx exits with it.
+// exitCode carries the agent's exit code out of a command, so mbx exits with it.
 type exitCode int
 
 func (c exitCode) Error() string { return fmt.Sprintf("exit status %d", int(c)) }
 
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "msbx",
+		Use:   "mbx",
 		Short: "Run a coding agent (or a shell) in a microsandbox microVM",
-		Long: `msbx runs a coding agent (or a shell) in a microsandbox microVM, with the current directory mounted
+		Long: `mbx runs a coding agent (or a shell) in a microsandbox microVM, with the current directory mounted
 at the same path as on the host.
 
-Config files are in ~/.config/msbx (override with the MSBX_CONFIG_DIR env var): the one whose directories
+Config files are in ~/.config/mbx (override with the MBX_CONFIG_DIR env var): the one whose directories
 has the current directory, else config.yaml. --config gives one instead.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -116,11 +116,11 @@ The sandbox is removed on exit unless --keep is given. If a sandbox with the sam
 connects to it instead, and leaves it running on exit.
 
 ARGS after -- are passed to claude; for shell they replace the configured command (default: bash).`,
-		Example: `  msbx run claude
-  msbx run claude -- -p "summarize this repo"
-  msbx run shell -- make test
-  msbx run claude --github --dry-run
-  msbx run shell --show-config`,
+		Example: `  mbx run claude
+  mbx run claude -- -p "summarize this repo"
+  mbx run shell -- make test
+  mbx run claude --github --dry-run
+  mbx run shell --show-config`,
 		ValidArgsFunction: completeAgent,
 		// Only the agent comes before --, so a stray word isn't passed to claude as a prompt
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -130,7 +130,7 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 			}
 			switch {
 			case len(before) == 0:
-				return errors.New("which agent to start: msbx run claude or msbx run shell")
+				return errors.New("which agent to start: mbx run claude or mbx run shell")
 			case before[0] != "claude" && before[0] != "shell":
 				return fmt.Errorf("unknown agent %q (claude or shell); arguments for it go after --", before[0])
 			case len(before) > 1:
@@ -279,8 +279,8 @@ func newSecretCmd() *cobra.Command {
 		Long: `Fetch the values of the secrets of the current directory's sandboxes (or the one named with --name) again,
 from the sources in the config, and swap them in (running or not) without a restart. Each secret keeps its
 hosts; to add or remove secrets, recreate the sandbox.`,
-		Example: `  msbx secret rotate
-  msbx secret rotate --name shell-repo`,
+		Example: `  mbx secret rotate
+  mbx secret rotate --name shell-repo`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace, err := os.Getwd()
@@ -305,7 +305,7 @@ func newRebuildCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "rebuild",
 		Short: "Rebuild the default image (" + sandbox.DefaultImage + ")",
-		Long: `Rebuild the default image (` + sandbox.DefaultImage + `): build msbx's built-in Dockerfile with the host
+		Long: `Rebuild the default image (` + sandbox.DefaultImage + `): build mbx's built-in Dockerfile with the host
 Docker, and load it into microsandbox.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -328,7 +328,7 @@ func newMCPCmd() *cobra.Command {
 	status := func(*cobra.Command, []string) error { return withConfig(mcpgateway.LoginStatus) }
 	cmd := &cobra.Command{
 		Use:   "mcp",
-		Short: "Manage msbx's logins to MCP servers (default: status)",
+		Short: "Manage mbx's logins to MCP servers (default: status)",
 		Long: `Manage the credentials for the MCP servers claude in the VM uses through the MCP gateway
 (claude.mcp_servers and claude.claude_ai_connectors). Log in to each server in claude.mcp_servers once with
 login; the gateway refreshes the token after that. claude.ai connectors use the host claude's login.`,
@@ -358,7 +358,7 @@ login; the gateway refreshes the token after that. claude.ai connectors use the 
 		},
 		&cobra.Command{
 			Use:   "logout SERVER",
-			Short: "Remove msbx's login to a server from the keychain",
+			Short: "Remove mbx's login to a server from the keychain",
 			Args:  cobra.ExactArgs(1),
 			RunE:  func(cmd *cobra.Command, args []string) error { return mcpgateway.Logout(args[0]) },
 		},
@@ -373,7 +373,7 @@ func newMCPGatewayCmd() *cobra.Command {
 		Long: `Manage the MCP gateway on the host, which forwards the MCP requests of claude in the VM with tokens that
 stay on the host. It listens on a unix socket per sandbox, exposed to that sandbox only. One gateway serves
 all sandboxes, and run starts it when needed; restart it after changing a connector's tool permissions on
-claude.ai or updating msbx.`,
+claude.ai or updating mbx.`,
 		Args: cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error { return mcpgateway.Status() },
 	}

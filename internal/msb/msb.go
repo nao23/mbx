@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 // Runner runs msb and makes other changes to host state. In dry-run mode they're printed instead of
@@ -198,7 +198,7 @@ func labels(args ...string) map[string]string {
 type Secret struct {
 	Env   string
 	Hosts []string
-	// FromEnv: msb takes the value from its environment variable of the same name, where msbx puts the value
+	// FromEnv: msb takes the value from its environment variable of the same name, where mbx puts the value
 	// it fetched from any secret_source (keychain, command, ...). False for a value written in the config
 	FromEnv bool
 }

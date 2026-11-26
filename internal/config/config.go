@@ -1,4 +1,4 @@
-// Package config loads msbx's config. Each field is described in defaults.yaml.
+// Package config loads mbx's config. Each field is described in defaults.yaml.
 package config
 
 import (
@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/nao23/msbx/internal/secret"
+	"github.com/nao23/mbx/internal/secret"
 )
 
 // Config is the merged config. Microsandbox and MicrosandboxFlags are passed to msb uninterpreted
@@ -102,11 +102,11 @@ const DefaultFile = "config.yaml"
 
 // Dir is the config dir, which holds the config files
 func Dir() string {
-	if d := os.Getenv("MSBX_CONFIG_DIR"); d != "" {
+	if d := os.Getenv("MBX_CONFIG_DIR"); d != "" {
 		return d
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "msbx")
+	return filepath.Join(home, ".config", "mbx")
 }
 
 // File returns the config file loaded and why it was chosen

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nao23/msbx/internal/secret"
-	"github.com/nao23/msbx/internal/testutil"
-	"github.com/nao23/msbx/internal/wizard"
+	"github.com/nao23/mbx/internal/secret"
+	"github.com/nao23/mbx/internal/testutil"
+	"github.com/nao23/mbx/internal/wizard"
 )
 
 // The settings take their values from the config, and changing them changes the right keys

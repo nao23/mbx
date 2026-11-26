@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nao23/msbx/internal/shell"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/shell"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 // Dry-run output favors readability; it isn't necessarily runnable as a shell script

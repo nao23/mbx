@@ -17,7 +17,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 // Setting is a menu item: the value at Path (keys joined with dots) in the config, changed with Input.

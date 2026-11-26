@@ -1,4 +1,4 @@
-# msbx's default image, embedded in msbx and built by it (see image.go)
+# mbx's default image, embedded in mbx and built by it (see image.go)
 
 # Only the uv binaries. Before the first FROM, as the ARG is used in FROM
 ARG UV_VERSION=latest

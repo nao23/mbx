@@ -1,4 +1,4 @@
-module github.com/nao23/msbx
+module github.com/nao23/mbx
 
 go 1.26.0
 

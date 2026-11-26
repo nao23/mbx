@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nao23/msbx/internal/secret"
-	"github.com/nao23/msbx/internal/testutil"
+	"github.com/nao23/mbx/internal/secret"
+	"github.com/nao23/mbx/internal/testutil"
 )
 
 var file = testutil.Dedent(`

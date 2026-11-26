@@ -3,8 +3,8 @@ package feature
 import (
 	_ "embed"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/msb"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/msb"
 )
 
 //go:embed emulation.sh

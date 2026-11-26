@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nao23/msbx/internal/config"
+	"github.com/nao23/mbx/internal/config"
 )
 
 // newGit copies the [user] section of the host's global gitconfig (not the rest, which has host-only

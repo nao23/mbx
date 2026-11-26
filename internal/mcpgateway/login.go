@@ -12,7 +12,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// login is msbx's OAuth login to an MCP server.
+// login is mbx's OAuth login to an MCP server.
 type login struct {
 	URL          string    `json:"url"` // as configured when logging in
 	TokenURL     string    `json:"token_url"`
@@ -47,7 +47,7 @@ func (l *login) refresh(ctx context.Context) error {
 
 // A login takes three keychain items, as go-keyring writes at most about 3 KB per item on macOS: account
 // <server> holds the JSON, <server>:access and <server>:refresh the tokens.
-const keychainService = "msbx-mcp-gateway"
+const keychainService = "mbx-mcp-gateway"
 
 func loadLogin(server string) (*login, error) {
 	data, err := keyring.Get(keychainService, server)
@@ -61,7 +61,7 @@ func loadLogin(server string) (*login, error) {
 		return nil, fmt.Errorf("the keychain's login for %s is unreadable (log in again): %w", server, err)
 	}
 	if l.AccessToken, err = keyring.Get(keychainService, server+":access"); errors.Is(err, keyring.ErrNotFound) {
-		return nil, nil // saved by an older msbx, with the tokens in the JSON
+		return nil, nil // saved by an older mbx, with the tokens in the JSON
 	} else if err != nil {
 		return nil, fmt.Errorf("read the token for %s from the keychain: %w", server, err)
 	}

@@ -4,9 +4,9 @@ import (
 	_ "embed"
 	"errors"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/secret"
-	"github.com/nao23/msbx/internal/shell"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/secret"
+	"github.com/nao23/mbx/internal/shell"
 )
 
 //go:embed ecr.sh

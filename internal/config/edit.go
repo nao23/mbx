@@ -12,11 +12,11 @@ import (
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 
-	"github.com/nao23/msbx/internal/ui"
-	"github.com/nao23/msbx/internal/wizard"
+	"github.com/nao23/mbx/internal/ui"
+	"github.com/nao23/mbx/internal/wizard"
 )
 
-// Edit is msbx config edit: it edits the workspace's config file, or with newFile makes a new one for the
+// Edit is mbx config edit: it edits the workspace's config file, or with newFile makes a new one for the
 // workspace starting from config.yaml, from a menu of the settings in wizard_settings.go (the menu is the
 // wizard package's).
 func Edit(workspace string, newFile bool) error {
@@ -47,7 +47,7 @@ func Edit(workspace string, newFile bool) error {
 	}
 	if forDir {
 		f.Fixed = append(f.Fixed, wizard.Change{Path: []string{"directories"}, Value: []string{tilde(workspace)}})
-		f.Header = fmt.Sprintf("msbx's config for %s and below, used there instead of config.yaml (made by msbx config\nedit from config.yaml). Check it with msbx run claude --show-config", tilde(workspace))
+		f.Header = fmt.Sprintf("mbx's config for %s and below, used there instead of config.yaml (made by mbx config\nedit from config.yaml). Check it with mbx run claude --show-config", tilde(workspace))
 	}
 	changes, err := wizard.Edit(f, values, wizardSettings(cur))
 	if err != nil || changes == nil {
@@ -58,14 +58,14 @@ func Edit(workspace string, newFile bool) error {
 	}
 
 	st := ui.For(os.Stdout)
-	fmt.Println(st.Dim("  Check it with msbx run claude --show-config or --dry-run"))
+	fmt.Println(st.Dim("  Check it with mbx run claude --show-config or --dry-run"))
 	for _, c := range changes {
 		if strings.Join(c.Path, ".") != "claude.mcp_servers" {
 			continue
 		}
 		for _, s := range c.Value.([]string) {
 			if !slices.Contains(cur.Claude.MCPServers, s) {
-				fmt.Println(st.Dim("  Log in to " + s + " with: msbx mcp login " + s))
+				fmt.Println(st.Dim("  Log in to " + s + " with: mbx mcp login " + s))
 			}
 		}
 	}
@@ -88,7 +88,7 @@ func chooseFile(workspace string, newFile bool) (target string, base []byte, for
 		}
 		switch base, err = os.ReadFile(path); {
 		case err == nil:
-			fmt.Println(st.Bold("Editing "+tilde(path)) + st.Dim(" ("+why+"; msbx config edit --new makes one for this directory)"))
+			fmt.Println(st.Bold("Editing "+tilde(path)) + st.Dim(" ("+why+"; mbx config edit --new makes one for this directory)"))
 		case os.IsNotExist(err):
 			err = nil
 			fmt.Println(st.Bold("Making "+tilde(path)) + st.Dim(" ("+why+")"))
@@ -96,7 +96,7 @@ func chooseFile(workspace string, newFile bool) (target string, base []byte, for
 		return path, base, false, err
 	}
 	if matched == workspace {
-		return "", nil, false, fmt.Errorf("%s is already for %s; edit it with msbx config edit", tilde(path), tilde(workspace))
+		return "", nil, false, fmt.Errorf("%s is already for %s; edit it with mbx config edit", tilde(path), tilde(workspace))
 	}
 
 	dir := Dir()

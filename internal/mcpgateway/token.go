@@ -10,7 +10,7 @@ import (
 
 	"github.com/zalando/go-keyring"
 
-	"github.com/nao23/msbx/internal/secret"
+	"github.com/nao23/mbx/internal/secret"
 )
 
 // ClaudeAIPrefix marks a claude.ai connector among a registration's servers.
@@ -47,13 +47,13 @@ func (c *tokenCache) get() (string, error) {
 		return "", err
 	}
 	if l == nil {
-		return "", fmt.Errorf("not logged in to %s; run msbx mcp login %s", c.server, c.server)
+		return "", fmt.Errorf("not logged in to %s; run mbx mcp login %s", c.server, c.server)
 	}
 	if !l.valid() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		if err := l.refresh(ctx); err != nil {
-			return "", fmt.Errorf("refresh the token for %s: %v; log in again with msbx mcp login %s", c.server, err, c.server)
+			return "", fmt.Errorf("refresh the token for %s: %v; log in again with mbx mcp login %s", c.server, err, c.server)
 		}
 		if err := saveLogin(c.server, l); err != nil {
 			return "", err

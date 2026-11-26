@@ -31,7 +31,7 @@ type sandboxSocket struct {
 	srv *http.Server
 }
 
-// Serve runs the gateway, opening and closing sockets as sandboxes are registered and removed. msbx run
+// Serve runs the gateway, opening and closing sockets as sandboxes are registered and removed. mbx run
 // talks to it only through the registration files.
 func Serve() error {
 	if err := os.MkdirAll(filepath.Dir(SocketPath("x")), 0o700); err != nil {

@@ -1,4 +1,4 @@
-// Package sandbox creates, sets up, runs and removes msbx's sandboxes.
+// Package sandbox creates, sets up, runs and removes mbx's sandboxes.
 package sandbox
 
 import (
@@ -13,12 +13,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nao23/msbx/internal/agent"
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/mcpgateway"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/agent"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/mcpgateway"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/ui"
 )
 
 type Sandbox struct {
@@ -47,7 +47,7 @@ func New(cfg *config.Config, workspace, name string, dryRun bool) (*Sandbox, err
 func (s *Sandbox) Run(args []string) (int, error) {
 	r, cfg, name := s.r, s.cfg, s.name
 	if why := defaultImageOutdated(); cfg.Image() == DefaultImage && why != "" {
-		r.Step(msb.OnHost, "Build the default image", why+"; build msbx's Dockerfile with the host Docker and load it into microsandbox")
+		r.Step(msb.OnHost, "Build the default image", why+"; build mbx's Dockerfile with the host Docker and load it into microsandbox")
 		if err := rebuild(r); err != nil {
 			return 0, err
 		}
@@ -114,30 +114,30 @@ func (s *Sandbox) start(args []string) error {
 		fmt.Println(shown)
 		return nil
 	}
-	// msb exec forwards terminal signals into the VM; msbx just waits for it to exit, then cleans up
+	// msb exec forwards terminal signals into the VM; mbx just waits for it to exit, then cleans up
 	signal.Notify(make(chan os.Signal, 1), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	// Blank lines around the agent's own output, to set it apart from msbx's progress
+	// Blank lines around the agent's own output, to set it apart from mbx's progress
 	fmt.Fprintln(os.Stderr)
 	err := s.r.Run(append([]string{"exec", "-t", s.name, "--"}, command...)...)
 	fmt.Fprintln(os.Stderr)
 	return err
 }
 
-// Labels on the sandboxes msbx creates, to tell them from others
+// Labels on the sandboxes mbx creates, to tell them from others
 const (
-	labelMsbx      = "msbx"
-	labelAgent     = "msbx.agent"
-	labelWorkspace = "msbx.workspace"
+	labelMbx       = "mbx"
+	labelAgent     = "mbx.agent"
+	labelWorkspace = "mbx.workspace"
 )
 
 func List() error {
-	list, err := msb.List(labelMsbx + "=1")
+	list, err := msb.List(labelMbx + "=1")
 	if err != nil {
 		return err
 	}
 	st := ui.For(os.Stdout)
 	if len(list) == 0 {
-		fmt.Println(st.Dim("No sandboxes created by msbx"))
+		fmt.Println(st.Dim("No sandboxes created by mbx"))
 		return nil
 	}
 	r := &msb.Runner{}
@@ -184,9 +184,9 @@ func List() error {
 	return nil
 }
 
-// Names returns the names of the sandboxes msbx created, for shell completion.
+// Names returns the names of the sandboxes mbx created, for shell completion.
 func Names() []string {
-	list, _ := msb.List(labelMsbx + "=1")
+	list, _ := msb.List(labelMbx + "=1")
 	var names []string
 	for _, sb := range list {
 		names = append(names, sb.Name)
@@ -239,8 +239,8 @@ func validate(cfg *config.Config) error {
 	}
 	if scripts, ok := cfg.Microsandbox["scripts"].(map[string]any); ok {
 		for k := range scripts {
-			if strings.HasPrefix(k, "msbx-") {
-				return fmt.Errorf("microsandbox_config.scripts: %s: the msbx- prefix is reserved for msbx", k)
+			if strings.HasPrefix(k, "mbx-") {
+				return fmt.Errorf("microsandbox_config.scripts: %s: the mbx- prefix is reserved for mbx", k)
 			}
 		}
 	}

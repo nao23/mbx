@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nao23/msbx/internal/feature"
-	"github.com/nao23/msbx/internal/msb"
+	"github.com/nao23/mbx/internal/feature"
+	"github.com/nao23/mbx/internal/msb"
 )
 
 // setupScriptName is registered as a microsandbox script (/.msb/scripts/<name>, on PATH).
-const setupScriptName = "msbx-setup"
+const setupScriptName = "mbx-setup"
 
 // setupScript joins the features' parts, each in a subshell so an early exit in one doesn't skip the rest.
 func setupScript(features []feature.Feature) string {

@@ -1,11 +1,11 @@
-// Package feature holds what msbx adds to a sandbox for each enabled feature. The agent adds to it in the
+// Package feature holds what mbx adds to a sandbox for each enabled feature. The agent adds to it in the
 // same form.
 package feature
 
 import (
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/secret"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/secret"
 )
 
 type Feature struct {

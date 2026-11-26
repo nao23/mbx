@@ -1,20 +1,20 @@
-# Built-in defaults. One config file from the config dir (~/.config/msbx) is layered on top
+# Built-in defaults. One config file from the config dir (~/.config/mbx) is layered on top
 version: 1
 
 # The directories this file is used in, subdirectories included (absolute, or starting with ~). Every file
 # but config.yaml lists some; config.yaml is used where no other file does
 directories: []
 
-# What msbx run shell starts (ARGS after -- replace it)
+# What mbx run shell starts (ARGS after -- replace it)
 command: [bash]
 
 # Don't remove the sandbox on exit (same as run --keep)
 keep: false
 
 # microsandbox's own config (passed to msb create --conf). Only network gets entries added by
-# msbx and is passed via --net-conf
+# mbx and is passed via --net-conf
 microsandbox_config:
-  image: msbx-default:latest    # msbx builds this one from its own Dockerfile; others are pulled by microsandbox
+  image: mbx-default:latest    # mbx builds this one from its own Dockerfile; others are pulled by microsandbox
   cpus: 2
   memory: 4G
   network:
@@ -35,14 +35,14 @@ secret_sources: {}
 # settings cache and consent from the host if present
 claude:
   secret_source: {env: CLAUDE_CODE_OAUTH_TOKEN}   # the host's environment variable of the same name
-  # A file whose contents are appended to msbx's built-in sandbox prompt (relative to the config dir), or ""
+  # A file whose contents are appended to mbx's built-in sandbox prompt (relative to the config dir), or ""
   extra_system_prompt: ""
   config_dir: /root/.claude-state
-  # MCP servers to use through the MCP gateway, with msbx's own logins: by name in mcp_gateway.servers or the
+  # MCP servers to use through the MCP gateway, with mbx's own logins: by name in mcp_gateway.servers or the
   # host claude's user-scope servers (mcpServers in ~/.claude.json)
   mcp_servers: []
   # claude.ai connectors to use through the MCP gateway, by display name (e.g. Slack). Only these use the
-  # host claude's claude.ai token, read from the host keychain; with none, msbx never reads it
+  # host claude's claude.ai token, read from the host keychain; with none, mbx never reads it
   claude_ai_connectors: []
   host_share:
     sessions: true
@@ -87,13 +87,13 @@ uv:
 network_extras:
   tls_intercept: []
 
-# The MCP gateway on the host (msbx mcp-gw), which forwards the VM's MCP requests with tokens that stay
+# The MCP gateway on the host (mbx mcp-gw), which forwards the VM's MCP requests with tokens that stay
 # on the host. It listens on a unix socket per sandbox, not on the network
 mcp_gateway:
   # The port in the VM claude sends MCP requests to (127.0.0.1:<port>, relayed by socat), and the vsock
   # port the sandbox's socket is exposed on
   port: 41837
-  # MCP servers msbx logs in to itself with OAuth (msbx mcp login <name>). Tokens are kept in the
+  # MCP servers mbx logs in to itself with OAuth (mbx mcp login <name>). Tokens are kept in the
   # host keychain and refreshed by the gateway. What an entry leaves out comes from the host claude's server
   # of the same name: url, and when the url is the same, client_id and callback_port. So a host claude
   # server needs an entry only for client_secret_source or scope

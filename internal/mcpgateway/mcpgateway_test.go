@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nao23/msbx/internal/msb"
+	"github.com/nao23/mbx/internal/msb"
 )
 
 var testPolicy = toolPolicy{
@@ -64,7 +64,7 @@ func TestFilterSSE(t *testing.T) {
 // socket when the registration goes
 func TestGatewaySockets(t *testing.T) {
 	// A short HOME, as a unix socket path is limited to 104 bytes and t.TempDir's are long on macOS
-	home, err := os.MkdirTemp("/tmp", "msbx")
+	home, err := os.MkdirTemp("/tmp", "mbx")
 	if err != nil {
 		t.Fatal(err)
 	}

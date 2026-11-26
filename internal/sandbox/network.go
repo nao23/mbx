@@ -4,17 +4,17 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/nao23/msbx/internal/config"
+	"github.com/nao23/mbx/internal/config"
 )
 
-// allowHost is a destination msbx allows. intercept turns on TLS interception, which secret substitution
+// allowHost is a destination mbx allows. intercept turns on TLS interception, which secret substitution
 // requires.
 type allowHost struct {
 	name      string
 	intercept bool
 }
 
-// buildNetwork adds msbx's secret destinations and hosts to microsandbox_config.network. ipRules go first, as
+// buildNetwork adds mbx's secret destinations and hosts to microsandbox_config.network. ipRules go first, as
 // the first matching rule wins and IP rules skip microsandbox's wait on domain rules. It's a single config,
 // as microsandbox replaces lists when layering configs.
 func buildNetwork(cfg *config.Config, hosts []allowHost, ipRules []string) map[string]any {

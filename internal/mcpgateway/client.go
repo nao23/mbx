@@ -1,6 +1,6 @@
 // Package mcpgateway is the MCP gateway on the host. It listens on a unix socket per sandbox, which msb
 // exposes to that sandbox only, at a vsock port, so the socket tells which sandbox a request comes from
-// without any credential in the VM. It forwards each request with a token kept on the host: msbx's own
+// without any credential in the VM. It forwards each request with a token kept on the host: mbx's own
 // OAuth login, or for claude.ai connectors (claudeai:<name>) the host claude's token.
 package mcpgateway
 
@@ -19,12 +19,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nao23/msbx/internal/config"
-	"github.com/nao23/msbx/internal/msb"
-	"github.com/nao23/msbx/internal/ui"
+	"github.com/nao23/mbx/internal/config"
+	"github.com/nao23/mbx/internal/msb"
+	"github.com/nao23/mbx/internal/ui"
 )
 
-// Registration is written by msbx run and removed with the sandbox.
+// Registration is written by mbx run and removed with the sandbox.
 type Registration struct {
 	ID      string   `json:"id"` // names the sandbox's socket
 	Servers []string `json:"servers"`
@@ -33,7 +33,7 @@ type Registration struct {
 
 func dir() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".local", "state", "msbx", "mcp-gateway")
+	return filepath.Join(home, ".local", "state", "mbx", "mcp-gateway")
 }
 
 func SandboxFile(name string) string {
@@ -103,7 +103,7 @@ func Start() error {
 	defer logf.Close()
 	cmd := exec.Command(exe, "mcp-gw", "serve")
 	cmd.Stdout, cmd.Stderr = logf, logf
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true} // outlive this msbx
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true} // outlive this mbx
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func LoginStatus(cfg *config.Config) error {
 	}
 
 	if len(cfg.Claude.MCPServers) > 0 {
-		fmt.Println(st.Bold("MCP servers") + "  " + st.Dim("claude.mcp_servers · msbx's own logins"))
+		fmt.Println(st.Bold("MCP servers") + "  " + st.Dim("claude.mcp_servers · mbx's own logins"))
 	}
 	for _, name := range cfg.Claude.MCPServers {
 		def, _ := cfg.MCPServer(name)
@@ -219,9 +219,9 @@ func LoginStatus(cfg *config.Config) error {
 		case err != nil:
 			note = err.Error()
 		case l == nil:
-			note, where = "not logged in · run msbx mcp login "+name, where+" (none yet)"
+			note, where = "not logged in · run mbx mcp login "+name, where+" (none yet)"
 		case l.URL != def.URL:
-			note = "logged in at another url (" + l.URL + ") · run msbx mcp login " + name
+			note = "logged in at another url (" + l.URL + ") · run mbx mcp login " + name
 		case l.valid() && l.Expiry.IsZero():
 			ok, note = true, "logged in, no expiry given"
 		case l.valid() && l.RefreshToken != "":
@@ -231,7 +231,7 @@ func LoginStatus(cfg *config.Config) error {
 		case l.RefreshToken != "":
 			ok, note = true, "logged in, expired · the gateway refreshes it on the next request"
 		default:
-			note = "the login expired without a refresh token · run msbx mcp login " + name
+			note = "the login expired without a refresh token · run mbx mcp login " + name
 		}
 		item(ok, name, note, [2]string{"url", def.URL + st.Dim("  from "+from)}, [2]string{"credentials", where})
 	}
@@ -253,7 +253,7 @@ func LoginStatus(cfg *config.Config) error {
 }
 
 // Setup registers the sandbox and starts the gateway if needed, which then opens the sandbox's socket.
-// Each of msbx's logins must be for the server's current url.
+// Each of mbx's logins must be for the server's current url.
 func Setup(r *msb.Runner, cfg *config.Config, name string, servers []string) (*Registration, error) {
 	for _, s := range servers {
 		if strings.HasPrefix(s, ClaudeAIPrefix) {
@@ -265,7 +265,7 @@ func Setup(r *msb.Runner, cfg *config.Config, name string, servers []string) (*R
 			return nil, err
 		}
 		if l == nil || l.URL != def.URL {
-			return nil, fmt.Errorf("claude.mcp_servers: not logged in to %s (at %s); run msbx mcp login %s", s, def.URL, s)
+			return nil, fmt.Errorf("claude.mcp_servers: not logged in to %s (at %s); run mbx mcp login %s", s, def.URL, s)
 		}
 	}
 	r.Step(
@@ -295,7 +295,7 @@ func StartFor(r *msb.Runner, reg *Registration) error {
 			return err
 		}
 		return waitSocket(reg.ID)
-	}, "msbx", "mcp-gw", "start")
+	}, "mbx", "mcp-gw", "start")
 }
 
 // register uses a placeholder ID in dry-run mode.
@@ -327,10 +327,10 @@ func URL(port int, server string) string {
 // BridgeScript starts socat in the VM, relaying 127.0.0.1:<port> to the vsock port msb exposes the
 // sandbox's socket on.
 func BridgeScript(port int) string {
-	return fmt.Sprintf(`pid=/run/msbx-mcp-bridge.pid
+	return fmt.Sprintf(`pid=/run/mbx-mcp-bridge.pid
 [ -f "$pid" ] && kill -0 "$(cat "$pid")" 2>/dev/null && exit 0
 command -v socat >/dev/null || { echo "warning: socat is missing; MCP servers are unavailable" >&2; exit 0; }
-nohup socat TCP-LISTEN:%[1]d,bind=127.0.0.1,reuseaddr,fork VSOCK-CONNECT:2:%[1]d >/var/log/msbx-mcp-bridge.log 2>&1 &
+nohup socat TCP-LISTEN:%[1]d,bind=127.0.0.1,reuseaddr,fork VSOCK-CONNECT:2:%[1]d >/var/log/mbx-mcp-bridge.log 2>&1 &
 echo $! >"$pid"`, port)
 }
 

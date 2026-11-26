@@ -5,7 +5,7 @@ real=$(command -v uv) || exit 0
 mv "$real" "$real-real"
 cat >"$real" <<'EOF'
 #!/bin/sh
-# msbx: keep the project's virtualenv in the VM, not in .venv shared with the host
+# mbx: keep the project's virtualenv in the VM, not in .venv shared with the host
 if [ -z "$UV_PROJECT_ENVIRONMENT" ]; then
   for f in uv.lock pyproject.toml; do
     d=$PWD
