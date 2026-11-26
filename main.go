@@ -332,8 +332,9 @@ func newBuildCmd() *cobra.Command {
 		Use:         "build (-t IMAGE [-f DOCKERFILE] [CONTEXT] | --default) [flags] [-- DOCKER_BUILD_ARGS...]",
 		Annotations: needsMsbDocker,
 		Short:       "Build an image for the VMs and load it into microsandbox",
-		Long: `Build an image for the VMs with the host Docker (for arm64, as the VMs are) and load it into microsandbox.
-As with docker build, the Dockerfile defaults to CONTEXT/Dockerfile and CONTEXT to the current directory.
+		Long: `Build an image for the VMs with the host Docker (for the host's architecture, as the VMs have it) and load it
+into microsandbox. As with docker build, the Dockerfile defaults to CONTEXT/Dockerfile and CONTEXT to the current
+directory.
 With --default, build the default image (` + sandbox.DefaultImage + `) from mbx's built-in Dockerfile: run
 builds it when it's missing or outdated, so use this to update what it has, like Claude Code (with
 -- --no-cache to skip Docker's cache).

@@ -17,7 +17,7 @@ func newEmulation(cfg *config.Config) (*Feature, error) {
 	if !cfg.Docker.Emulation {
 		return nil, nil
 	}
-	return &Feature{Name: "docker.emulation", Setup: &Setup{"Run amd64 and other binaries under QEMU (no effect on arm64)", emulationScript}}, nil
+	return &Feature{Name: "docker.emulation", Setup: &Setup{"Run binaries for other architectures (amd64, arm64, etc.) under QEMU; native ones are unaffected", emulationScript}}, nil
 }
 
 // newDocker gives Docker an ext4 disk, as it can't create containers on the overlay root filesystem

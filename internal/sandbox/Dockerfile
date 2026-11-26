@@ -14,7 +14,7 @@ FROM ubuntu:26.04
 # - docker.io / iptables / nftables: the sandbox's own Docker Engine
 # - docker-compose-v2 / docker-buildx: docker compose, and buildx that compose's build uses
 # - dnsmasq-base: relays container DNS (see internal/feature/docker.sh)
-# - qemu-user / qemu-user-binfmt: run containers for other architectures, such as amd64
+# - qemu-user / qemu-user-binfmt: run containers for architectures other than the VM's (amd64 on arm64, etc.)
 # - build-essential etc.: build Python packages with C extensions (mysqlclient, etc.)
 # - socat: relays claude's MCP requests to the MCP gateway's socket over vsock
 # - gh: GitHub CLI, authenticated with $GH_TOKEN by the github feature

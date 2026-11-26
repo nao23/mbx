@@ -6,7 +6,7 @@ A CLI that runs a coding agent (or a shell) inside a [microsandbox](https://docs
 - Sandboxes are disposable. They're removed on exit
 - Outbound traffic is limited to the domains on the allowlist
 - Secret values (tokens) never enter the VM. The VM gets a placeholder, and a proxy swaps in the real value as it's sent
-- A Docker Engine dedicated to the VM is available. amd64 images also run, under QEMU
+- A Docker Engine dedicated to the VM is available. Images for other architectures also run, under QEMU
 - Claude Code's session history is shared with the host's `~/.claude`, so the host's claude and the sandbox can `--resume` each other's sessions
 
 The config is a single YAML file. microsandbox's own settings are passed to microsandbox as-is; mbx handles only what it adds (sharing with the host, Docker, GitHub, etc.).
@@ -55,13 +55,13 @@ claude:
   secret_source: {keychain: claude-microsandbox-token}
 ```
 
-By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it automatically when it's missing, and rebuilds it when an mbx update has changed the built-in `Dockerfile` (detected by a hash recorded in an image label). The image is built for arm64 with the host's Docker and loaded into microsandbox. Claude Code is the latest version at build time, so to update it, rebuild with `mbx build --default -- --no-cache`.
+By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it automatically when it's missing, and rebuilds it when an mbx update has changed the built-in `Dockerfile` (detected by a hash recorded in an image label). The image is built with the host's Docker and loaded into microsandbox. Claude Code is the latest version at build time, so to update it, rebuild with `mbx build --default -- --no-cache`.
 
 If `microsandbox_config.image` names another image (`ubuntu:24.04`, `ghcr.io/...`, etc.), mbx doesn't build anything; microsandbox pulls it from its registry. mbx features (Docker, the uv wrapper, etc.) don't work if the image lacks what they rely on.
 
 ### Using your own image
 
-Write a Dockerfile, and build it with `mbx build`: like `docker build`, but for arm64 (as the VMs are) with the host's Docker, and it loads the image into microsandbox (`--dry-run` shows the commands). Arguments after `--` go to `docker build`.
+Write a Dockerfile, and build it with `mbx build`: like `docker build`, but it also loads the image into microsandbox (`--dry-run` shows the commands). Arguments after `--` go to `docker build`.
 
 ```sh
 mbx build -t my-sandbox:latest .                      # ./Dockerfile
@@ -168,7 +168,7 @@ claude:                         # used only by mbx run (claude), not mbx run she
 docker:
   enabled: true
   disk: 20G                     # disk for Docker (removed with the sandbox)
-  emulation: true               # run amd64 etc. under QEMU
+  emulation: true               # run other architectures under QEMU
   ecr:                          # log docker in the VM in to ECR (run --ecr)
     enabled: false
     registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
@@ -328,7 +328,7 @@ There are two kinds of servers, with tokens from different places:
 
 - `/var/lib/docker` is an ext4 disk dedicated to the sandbox, since containers can't be created on the root filesystem (overlay)
 - Container DNS goes through dnsmasq in the VM (`172.17.0.1`). mbx starts dockerd with `--dns 172.17.0.1` to set this up (if the image's `daemon.json` has `dns`, that's used instead). Some routers answer a non-EDNS query with more than 512 bytes; microsandbox's DNS can't receive it all and returns SERVFAIL, and musl (Alpine-based) containers fail to resolve names. dnsmasq keeps answers small to prevent this
-- amd64 binaries run under QEMU (user mode). arm64 ones are unaffected. Speed is about a third to a quarter of native
+- Binaries for other architectures run under QEMU (user mode). Speed is about a third to a quarter of native
 
 ### Sharing with the host's `~/.claude`
 
