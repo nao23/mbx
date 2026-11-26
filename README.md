@@ -13,7 +13,7 @@ The config is a single YAML file. microsandbox's own settings are passed to micr
 
 ## Requirements
 
-- macOS (Apple Silicon)
+- macOS (Apple Silicon) or Linux (with KVM)
 - [microsandbox](https://docs.microsandbox.dev) (`msb`; tested with the Homebrew install)
 - Go (to install)
 - Docker on the host (to build the default image; Lima etc. is fine)
@@ -291,7 +291,7 @@ A server in `mcp_servers` is defined by its `mcp_gateway.servers` entry, with wh
 There are two kinds of servers, with tokens from different places:
 
 - **`mcp_servers`: mbx's own login.** Log in once with `mbx mcp login example`. mbx finds the server's OAuth authorization server as MCP clients do (its protected resource metadata, then the authorization server's metadata), registers itself as a client by dynamic client registration unless `client_id` is set, and opens the browser to authorize, with PKCE. The redirect goes to `http://localhost:<callback_port>/callback` (a random port by default; servers whose `client_id` was registered with a fixed redirect need that port). The login is saved in the keyring under service `mbx-mcp-gateway`: account `<server>` holds the login (url, client, expiry), and `<server>:access` and `<server>:refresh` the tokens. The gateway refreshes them when they expire. Changing `url` needs a new login
-- **`claude_ai_connectors`: the host claude's claude.ai token.** claude.ai connectors can only be used with the claude.ai login, so the gateway reads the host claude's token from the keychain (`Claude Code-credentials`) only for these. The gateway doesn't refresh it, so when it expires, use the host's claude once (`mbx mcp` shows expiry). Connectors get the same names in the VM as on the host (`claude_ai_Slack`), so tool names (`mcp__claude_ai_Slack__...`) and permission settings in `settings.json` match the host's. Tools blocked on claude.ai are removed from the list by the gateway, and calls to them are refused
+- **`claude_ai_connectors`: the host claude's claude.ai token.** claude.ai connectors can only be used with the claude.ai login, so the gateway reads the host claude's token (from the keychain on macOS, `~/.claude/.credentials.json` on Linux) only for these. The gateway doesn't refresh it, so when it expires, use the host's claude once (`mbx mcp` shows expiry). Connectors get the same names in the VM as on the host (`claude_ai_Slack`), so tool names (`mcp__claude_ai_Slack__...`) and permission settings in `settings.json` match the host's. Tools blocked on claude.ai are removed from the list by the gateway, and calls to them are refused
 
 `mbx run` starts the gateway when needed. It reaches each sandbox through a unix socket of its own rather than the network, so the VM holds no credentials and other sandboxes can't use its servers. A custom image needs `socat` for MCP servers.
 
