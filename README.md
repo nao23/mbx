@@ -27,8 +27,6 @@ go install github.com/nao23/mbx@latest
 
 ## Setup
 
-`mbx config edit` makes the config file from a menu of claude's settings, the token sources and the features (or write it by hand, see below). Run it again to edit the file the current directory uses, or run `mbx config edit --new` in a directory that needs its own config to make one for it.
-
 Put these files in the config dir `~/.config/mbx/`:
 
 | File | Contents |
@@ -96,7 +94,6 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 
 | Command | Description |
 |---|---|
-| `mbx config edit [--new]` | Make or edit a config file from a menu of its settings |
 | `mbx run claude\|shell [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
 | `mbx ls` | List the sandboxes mbx created |
 | `mbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
@@ -111,7 +108,7 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 
 ## Configuration
 
-The config file is `~/.config/mbx/config.yaml` (the config dir can be changed with the `MBX_CONFIG_DIR` environment variable). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml)). The minimal config is just `version: 1`.
+The config file is `~/.config/mbx/config.yaml` (the config dir can be changed with the `MBX_CONFIG_DIR` environment variable). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml), which describes every setting). The minimal config is just `version: 1`.
 
 The config has a part passed to microsandbox as-is, and mbx's extensions.
 
