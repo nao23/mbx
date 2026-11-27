@@ -179,8 +179,9 @@ func TestLoginWithClientID(t *testing.T) {
 	}
 }
 
-// run refuses a server mbx isn't logged in to, or logged in to at another URL
-func TestSetupRequiresLogin(t *testing.T) {
+// run goes on (with a warning) for a server mbx isn't logged in to, or logged in to at another URL, as the
+// gateway picks up a later login
+func TestSetupWithoutLogin(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	cfg := &config.Config{}
 	cfg.MCPGateway.Port = 41837
@@ -193,9 +194,9 @@ func TestSetupRequiresLogin(t *testing.T) {
 		if l != nil {
 			saveLogin("example", l)
 		}
-		_, err := Setup(&msb.Runner{DryRun: true}, cfg, "sb", []string{"example"})
-		if err == nil || !strings.Contains(err.Error(), "mbx mcp login example") {
-			t.Errorf("%s: err = %v, want one saying to log in", name, err)
+		reg, err := Setup(&msb.Runner{DryRun: true}, cfg, "sb", []string{"example"})
+		if err != nil || reg == nil {
+			t.Errorf("%s: Setup = %v, %v; want a registration", name, reg, err)
 		}
 	}
 	saveLogin("example", &login{URL: "https://mcp.example.com/mcp", AccessToken: "x"})

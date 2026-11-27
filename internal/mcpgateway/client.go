@@ -256,6 +256,8 @@ func LoginStatus(cfg *config.Config) error {
 // Setup registers the sandbox and starts the gateway if needed, which then opens the sandbox's socket.
 // Each of mbx's logins must be for the server's current url.
 func Setup(r *msb.Runner, cfg *config.Config, name string, servers []string) (*Registration, error) {
+	// Without a login, the server just fails to connect in the VM. The gateway reads the login on each
+	// connection until it has one, so logging in later and reconnecting (/mcp in claude) works
 	for _, s := range servers {
 		if strings.HasPrefix(s, ClaudeAIPrefix) {
 			continue
@@ -265,8 +267,9 @@ func Setup(r *msb.Runner, cfg *config.Config, name string, servers []string) (*R
 		if err != nil {
 			return nil, err
 		}
-		if l == nil || l.URL != def.URL {
-			return nil, fmt.Errorf("claude.mcp_servers: not logged in to %s (at %s); run mbx mcp login %s", s, def.URL, s)
+		// Also for a login at another url, or one expired that can't be refreshed
+		if l == nil || l.URL != def.URL || !l.valid() && l.RefreshToken == "" {
+			ui.Warn(fmt.Sprintf("not logged in to %s (mbx mcp login %s)", s, s))
 		}
 	}
 	r.Step(
