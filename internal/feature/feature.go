@@ -28,8 +28,8 @@ type Setup struct {
 	Script  string
 }
 
-// constructors are in setup script order (ECR logs in to Docker, so it comes after it). Each returns nil
-// when disabled.
+// constructors are in setup script order (ECR logs in to Docker, so it comes after it; the config's setup
+// runs last, with everything ready). Each returns nil when disabled.
 var constructors = []func(cfg *config.Config) (*Feature, error){
 	newEmulation,
 	newDocker,
@@ -37,6 +37,7 @@ var constructors = []func(cfg *config.Config) (*Feature, error){
 	newUV,
 	newECR,
 	newGitHub,
+	newSetup,
 }
 
 func Enabled(cfg *config.Config) ([]Feature, error) {

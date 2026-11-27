@@ -147,6 +147,8 @@ microsandbox_flags:             # msb create flags (flag name: value)
 # --- mbx's extensions ---
 command: [bash]                 # the command mbx run shell starts
 keep: false                     # don't remove the sandbox on exit (same as run --keep)
+setup: |                        # run in the VM on every start, before the agent (write $VAR, not ${VAR})
+  uv sync
 
 claude:                         # used only by mbx run (claude), not mbx run shell
   secret_source: {env: CLAUDE_CODE_OAUTH_TOKEN}   # where the value of CLAUDE_CODE_OAUTH_TOKEN comes from (default: the host env var)

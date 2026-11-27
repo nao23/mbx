@@ -11,6 +11,11 @@ command: [bash]
 # Don't remove the sandbox on exit (same as run --keep)
 keep: false
 
+# A shell script run in the VM (in the workspace) on every start, after mbx's own setup and before the
+# agent. Write it to be safe to run again. A failure stops the run. Write $VAR, not ${VAR}: microsandbox
+# expands ${...} from the host's environment
+setup: ""
+
 # microsandbox's own config (passed to msb create --conf). Only network gets entries added by
 # mbx and is passed via --net-conf
 microsandbox_config:

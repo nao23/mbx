@@ -70,6 +70,7 @@ func TestEnabled(t *testing.T) {
 		docker:
 		  ecr: {enabled: true, registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com}
 		github: {enabled: true}
+		setup: echo hi
 	`)
 	features, err := Enabled(cfg)
 	if err != nil {
@@ -88,9 +89,14 @@ func TestEnabled(t *testing.T) {
 	if want := []string{"ECR_TOKEN", "GH_TOKEN"}; !slices.Equal(envs, want) {
 		t.Errorf("secrets = %v, want %v", envs, want)
 	}
-	// ECR logs in to Docker, so it comes after Docker starts
-	if want := []string{"Run", "Start", "Keep", "Log", "Rewrite"}; !slices.Equal(setups, want) {
+	// ECR logs in to Docker, so it comes after Docker starts; the config's setup comes last
+	if want := []string{"Run", "Start", "Keep", "Log", "Rewrite", "The"}; !slices.Equal(setups, want) {
 		t.Errorf("setup order (first words) = %v, want %v", setups, want)
+	}
+
+	cfg = loadConfig(t, "setup: echo ${HOME}\n")
+	if _, err := Enabled(cfg); err == nil || !strings.Contains(err.Error(), "${VAR}") {
+		t.Errorf("setup with ${...}: err = %v, want the ${VAR} error", err)
 	}
 
 	cfg = loadConfig(t, "docker: {enabled: false, emulation: false}\nuv: {vm_venv: false}\n")

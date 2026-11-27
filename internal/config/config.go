@@ -20,6 +20,7 @@ type Config struct {
 	Agent             string                   `yaml:"-"` // what run starts: claude or shell, from the command line
 	Command           []string                 `yaml:"command"`
 	Keep              bool                     `yaml:"keep"`
+	Setup             string                   `yaml:"setup"`
 	Microsandbox      map[string]any           `yaml:"microsandbox_config"`
 	MicrosandboxFlags map[string]any           `yaml:"microsandbox_flags"`
 	SecretSources     map[string]secret.Source `yaml:"secret_sources"`
