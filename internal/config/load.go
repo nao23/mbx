@@ -81,34 +81,21 @@ func layer(m map[string]any) (*Config, error) {
 // some (directories: ["~"] makes one for anywhere under the home dir that no other file covers). A directory
 // in two files is an error, whichever the workspace
 func Choose(workspace string) (path, matched string, err error) {
-	dir := Dir()
-	files, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
+	files, err := Files()
 	if err != nil {
 		return "", "", err
 	}
 	listedIn := map[string]string{} // directory -> the file listing it
 	deepest := ""
 	for _, f := range files {
-		m, err := readConfigFile(f)
-		if err != nil {
-			return "", "", err
+		if f.Err != nil {
+			return "", "", f.Err
 		}
-		dirs := StringList(m["directories"])
-		if len(dirs) == 0 {
-			return "", "", fmt.Errorf(`%s: directories: list the directories it's used in ("~" for anywhere under the home dir)`, f)
-		}
-		for _, d := range dirs {
-			if d == "<nil>" {
-				return "", "", fmt.Errorf(`%s: directories: a bare ~ is null in YAML; write "~" for the home dir`, f)
+		for _, d := range f.Directories {
+			if other, ok := listedIn[d]; ok && other != f.Path {
+				return "", "", fmt.Errorf("directories: %s is in both %s and %s", d, other, f.Path)
 			}
-			d = filepath.Clean(ExpandHome(d))
-			if !filepath.IsAbs(d) {
-				return "", "", fmt.Errorf("%s: directories: %s isn't an absolute path (or one starting with ~)", f, d)
-			}
-			if other, ok := listedIn[d]; ok && other != f {
-				return "", "", fmt.Errorf("directories: %s is in both %s and %s", d, other, f)
-			}
-			listedIn[d] = f
+			listedIn[d] = f.Path
 			if rel, err := filepath.Rel(d, workspace); err == nil && rel != ".." && !strings.HasPrefix(rel, "../") &&
 				len(d) > len(deepest) {
 				deepest = d
@@ -119,6 +106,51 @@ func Choose(workspace string) (path, matched string, err error) {
 		return listedIn[deepest], deepest, nil
 	}
 	return "", "", nil
+}
+
+// File is a config file in the config dir, with its directories (absolute and cleaned), or the error that
+// makes it unusable.
+type File struct {
+	Path        string
+	Directories []string
+	Err         error
+}
+
+// Files lists the config dir's *.yaml.
+func Files() ([]File, error) {
+	paths, err := filepath.Glob(filepath.Join(Dir(), "*.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	var files []File
+	for _, p := range paths {
+		f := File{Path: p}
+		f.Directories, f.Err = directories(p)
+		files = append(files, f)
+	}
+	return files, nil
+}
+
+func directories(path string) ([]string, error) {
+	m, err := readConfigFile(path)
+	if err != nil {
+		return nil, err
+	}
+	dirs := StringList(m["directories"])
+	if len(dirs) == 0 {
+		return nil, fmt.Errorf(`%s: directories: list the directories it's used in ("~" for anywhere under the home dir)`, path)
+	}
+	for i, d := range dirs {
+		if d == "<nil>" {
+			return nil, fmt.Errorf(`%s: directories: a bare ~ is null in YAML; write "~" for the home dir`, path)
+		}
+		d = filepath.Clean(ExpandHome(d))
+		if !filepath.IsAbs(d) {
+			return nil, fmt.Errorf("%s: directories: %s isn't an absolute path (or one starting with ~)", path, d)
+		}
+		dirs[i] = d
+	}
+	return dirs, nil
 }
 
 // readConfigFile reads a config file. A missing one is empty

@@ -49,6 +49,7 @@ gives one instead.`,
 		return fmt.Errorf("%w (see %s --help)", err, cmd.CommandPath())
 	})
 	root.AddCommand(
+		newConfigCmd(),
 		newRunCmd(),
 		newLsCmd(),
 		newStopCmd(),
@@ -72,6 +73,70 @@ var (
 	needsMsb       = map[string]string{requires: "msb"}
 	needsMsbDocker = map[string]string{requires: "msb,docker"}
 )
+
+func newConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "Manage the config files",
+		Args:  cobra.NoArgs,
+	}
+	ls := &cobra.Command{
+		Use:   "ls",
+		Short: "List the config files with their directories, marking the one the current directory uses",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			return config.List(workspace)
+		},
+	}
+	var newFile bool
+	edit := &cobra.Command{
+		Use:   "edit [--new] [NAME]",
+		Short: "Open a config file in the editor, and check it",
+		Long: `Open a config file in the editor ($VISUAL, $EDITOR, else vi), and check it once the editor exits: the one
+the current directory uses, or NAME in the config dir (.yaml may be left out), or the file given with
+--config. With --new, make NAME (default: the directory's name) first, for the current directory alone,
+with the settings of the file it uses.`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			workspace, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			name := ""
+			if len(args) > 0 {
+				name = args[0]
+			}
+			if (name != "" || newFile) && configFile != "" {
+				return errors.New("--config can't go with NAME or --new")
+			}
+			return config.Edit(workspace, name, configFile, newFile)
+		},
+		ValidArgsFunction: func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+			files, _ := config.Files()
+			var names []string
+			for _, f := range files {
+				names = append(names, strings.TrimSuffix(filepath.Base(f.Path), ".yaml"))
+			}
+			return names, cobra.ShellCompDirectiveNoFileComp
+		},
+	}
+	defaults := &cobra.Command{
+		Use:   "defaults",
+		Short: "Show the built-in defaults: every setting, with a description",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := os.Stdout.Write(config.Defaults())
+			return err
+		},
+	}
+	edit.Flags().BoolVar(&newFile, "new", false, "make a config file for the current directory first")
+	cmd.AddCommand(ls, edit, defaults)
+	return cmd
+}
 
 type runOptions struct {
 	name, agent              string

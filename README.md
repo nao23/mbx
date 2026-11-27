@@ -27,7 +27,7 @@ go install github.com/nao23/mbx@latest
 
 ## Setup
 
-Put these files in the config dir `~/.config/mbx/`:
+Put these files in the config dir `~/.config/mbx/` (`mbx config edit --new` makes one for the current directory):
 
 | File | Contents |
 |---|---|
@@ -93,6 +93,9 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 
 | Command | Description |
 |---|---|
+| `mbx config ls` | List the config files with their directories, marking the one the current directory uses |
+| `mbx config edit [--new] [NAME]` | Open the current directory's config file (or NAME) in the editor, and check it. `--new` makes one for the current directory first |
+| `mbx config defaults` | Show every setting with its default and a description |
 | `mbx run claude\|shell [OPTIONS] [-- ARGS...]` | Create a sandbox and start the agent in it. If a sandbox with the same name exists, connect to it |
 | `mbx ls` | List the sandboxes mbx created |
 | `mbx stop NAME...` | Stop sandboxes (for those kept with `--keep`) |
@@ -107,7 +110,7 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 
 ## Configuration
 
-Config files are `~/.config/mbx/*.yaml` (the config dir can be changed with the `MBX_CONFIG_DIR` environment variable), each used in the directories it lists (see [Configs per directory](#configs-per-directory)). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml), which describes every setting). The minimal config is `version: 1` and `directories`.
+Config files are `~/.config/mbx/*.yaml` (the config dir can be changed with the `MBX_CONFIG_DIR` environment variable), each used in the directories it lists (see [Configs per directory](#configs-per-directory)). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml), also shown by `mbx config defaults`). The minimal config is `version: 1` and `directories`.
 
 The config has a part passed to microsandbox as-is, and mbx's extensions.
 
