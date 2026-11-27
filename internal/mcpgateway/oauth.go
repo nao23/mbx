@@ -146,8 +146,12 @@ func Login(name string, s config.MCPServer) error {
 }
 
 func Logout(name string) error {
-	if err := removeLogin(name); err != nil {
+	found, err := removeLogin(name)
+	if err != nil {
 		return err
+	}
+	if !found {
+		return fmt.Errorf("not logged in to %s (mbx mcp status lists the servers and their logins)", name)
 	}
 	ui.Done("logged out of "+name, "")
 	return nil

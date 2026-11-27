@@ -155,6 +155,9 @@ func TestLoginWithDynamicRegistration(t *testing.T) {
 	if _, err := tokenCacheFor("fake").get(); err == nil || !strings.Contains(err.Error(), "mbx mcp login fake") {
 		t.Errorf("get after logout: err = %v, want one saying to log in", err)
 	}
+	if err := Logout("fake"); err == nil || !strings.Contains(err.Error(), "not logged in to fake") {
+		t.Errorf("logout with no login: err = %v, want one saying there's none", err)
+	}
 }
 
 // Without a WWW-Authenticate pointer the resource metadata is found at its well-known URL; a configured

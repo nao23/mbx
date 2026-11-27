@@ -90,11 +90,16 @@ func saveLogin(server string, l *login) error {
 	return nil
 }
 
-func removeLogin(server string) error {
+// removeLogin removes the server's login from the keyring, and reports whether there was any.
+func removeLogin(server string) (bool, error) {
+	found := false
 	for _, account := range []string{server, server + ":access", server + ":refresh"} {
-		if err := keyring.Delete(keyringService, account); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-			return fmt.Errorf("remove the login for %s from the keyring: %w", server, err)
+		switch err := keyring.Delete(keyringService, account); {
+		case err == nil:
+			found = true
+		case !errors.Is(err, keyring.ErrNotFound):
+			return found, fmt.Errorf("remove the login for %s from the keyring: %w", server, err)
 		}
 	}
-	return nil
+	return found, nil
 }
