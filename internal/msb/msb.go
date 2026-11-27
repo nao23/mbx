@@ -3,10 +3,12 @@ package msb
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/nao23/mbx/internal/ui"
 )
@@ -40,6 +42,23 @@ func (r *Runner) Task(label string, args ...string) error {
 	return ui.Task(label, func(out io.Writer) error {
 		cmd := exec.Command("msb", args...)
 		cmd.Stdout, cmd.Stderr = out, out
+		return cmd.Run()
+	})
+}
+
+// TaskInput runs msb as a progress item, with input on its stdin. Dry-run shows the input as a here-document.
+func (r *Runner) TaskInput(label, input string, args ...string) error {
+	if r.DryRun {
+		words := []string{"msb"}
+		for _, a := range args {
+			words = append(words, r.quote(a))
+		}
+		fmt.Printf("%s <<'EOF'\n%sEOF\n", strings.Join(words, " "), input)
+		return nil
+	}
+	return ui.Task(label, func(out io.Writer) error {
+		cmd := exec.Command("msb", args...)
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = strings.NewReader(input), out, out
 		return cmd.Run()
 	})
 }

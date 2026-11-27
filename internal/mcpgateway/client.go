@@ -339,8 +339,9 @@ func URL(port int, server string) string {
 // BridgeScript starts socat in the VM, relaying 127.0.0.1:<port> to the vsock port msb exposes the
 // sandbox's socket on.
 func BridgeScript(port int) string {
+	// /run outlives a stop and pids are reused after the restart, so the pid's process must be socat
 	return fmt.Sprintf(`pid=/run/mbx-mcp-bridge.pid
-[ -f "$pid" ] && kill -0 "$(cat "$pid")" 2>/dev/null && exit 0
+[ -f "$pid" ] && [ "$(cat "/proc/$(cat "$pid")/comm" 2>/dev/null)" = socat ] && exit 0
 command -v socat >/dev/null || { echo "warning: socat is missing; MCP servers are unavailable" >&2; exit 0; }
 nohup socat TCP-LISTEN:%[1]d,bind=127.0.0.1,reuseaddr,fork VSOCK-CONNECT:2:%[1]d >/var/log/mbx-mcp-bridge.log 2>&1 &
 echo $! >"$pid"`, port)

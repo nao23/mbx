@@ -147,7 +147,7 @@ microsandbox_flags:             # msb create flags (flag name: value)
 # --- mbx's extensions ---
 command: [bash]                 # the command mbx run shell starts
 keep: false                     # don't remove the sandbox on exit (same as run --keep)
-setup: |                        # run in the VM on every start, before the agent (write $VAR, not ${VAR})
+setup: |                        # run in the VM on every start, before the agent
   uv sync
 
 claude:                         # used only by mbx run (claude), not mbx run shell
@@ -279,11 +279,10 @@ mcp_gateway:
 2. [Host] Create the shared parts of `~/.claude` (`projects/`, `file-history/`, `history.jsonl`) if they're missing. They exist once the host's claude has been used, so this is usually skipped
 3. [Host] Write the config files for `msb create`
    - `sandbox.yaml`: the `microsandbox_config:` section (except `network`), plus what mbx adds:
-     - `scripts`: the VM setup script `mbx-setup`
      - `patches`: claude's initial `.claude.json` (onboarding done, working directory trusted), a copy of the org settings cache, and the host's git `[user]` and global ignore file. Written once, at creation
    - `network.yaml`: `microsandbox_config.network` plus the entries mbx adds
 4. [Host → VM] Create the sandbox with `msb create`. `microsandbox_flags`, mounts and secrets are passed as flags
-5. [VM] Set up the VM with `msb exec <name> -- mbx-setup`. It's assembled from the enabled features (registering QEMU, starting Docker Engine, wrapping uv, logging in to ECR, rewriting GitHub URLs for git)
+5. [VM] Set up the VM with a script passed to `msb exec <name> -- sh -s` on every start (so a kept sandbox gets the current one). It's assembled from the enabled features (registering QEMU, starting Docker Engine, wrapping uv, logging in to ECR, rewriting GitHub URLs for git)
 6. [VM] Start claude with `msb exec -t`
 7. [Host] Remove the sandbox on exit
 

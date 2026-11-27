@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -83,7 +84,6 @@ func TestValidate(t *testing.T) {
 		{"connector in mcp_servers", "claude: {mcp_servers: [\"claudeai:Slack\"]}\n", "claude.claude_ai_connectors (as Slack)"},
 		{"reserved flag", "microsandbox_flags: {workdir: /tmp}\n", "--workdir is set by mbx"},
 		{"reserved flag with dashes", "microsandbox_flags: {--name: x}\n", "--name is set by mbx"},
-		{"reserved script", "microsandbox_config: {scripts: {mbx-mine: echo}}\n", "mbx- prefix is reserved"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validate(loadConfig(t, tc.yaml, "/work"))
@@ -147,15 +147,33 @@ func TestSetupScript(t *testing.T) {
 	}
 }
 
-// microsandbox expands ${VAR} in msb create's config from the host's environment, which holds the real
-// tokens, so the setup script must not use that form
-func TestSetupScriptHasNoBracedVars(t *testing.T) {
-	cfg := loadConfig(t, `
-		docker: {enabled: true, emulation: true, ecr: {enabled: true, registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com}}
-		github: {enabled: true}
-	`, "/work")
-	if s := setupScript(features(cfg, "/work", nil)); strings.Contains(s, "${") {
-		t.Errorf("setupScript contains ${...}, which microsandbox expands on the host:\n%s", s)
+// captureStdout returns what fn prints to stdout, as dry-run output goes there.
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout := os.Stdout
+	os.Stdout = w
+	defer func() { os.Stdout = stdout }()
+	fn()
+	w.Close()
+	out, _ := io.ReadAll(r)
+	return string(out)
+}
+
+// The setup script goes to the VM on stdin, unexpanded: microsandbox would expand ${VAR} from the host's
+// environment (which holds the real tokens) in a script registered with msb create
+func TestSetupGuestPassesScriptOnStdin(t *testing.T) {
+	cfg := loadConfig(t, "docker: {enabled: false, emulation: false}\nsetup: echo ${HOME}\n", "/work")
+	out := captureStdout(t, func() {
+		if err := setupGuest(&msb.Runner{DryRun: true}, features(cfg, "/work", nil), "sb"); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "msb exec --stream sb -- sh -s <<'EOF'\n") || !strings.Contains(out, "echo ${HOME}\n") {
+		t.Errorf("dry-run output:\n%s", out)
 	}
 }
 
@@ -174,9 +192,9 @@ func TestBuildPlanShell(t *testing.T) {
 	if _, ok := p.conf["network"]; ok {
 		t.Error("--conf has network; it goes to --net-conf")
 	}
-	scripts := p.conf["scripts"].(map[string]any)
-	if scripts["hello"] != "echo hello" || scripts[setupScriptName] == nil {
-		t.Errorf("scripts = %v, want the user's and %s", scripts, setupScriptName)
+	// The setup script is passed on each run, not registered
+	if scripts := p.conf["scripts"].(map[string]any); len(scripts) != 1 || scripts["hello"] != "echo hello" {
+		t.Errorf("scripts = %v, want the user's only", scripts)
 	}
 	if _, ok := p.conf["patches"]; ok {
 		t.Error("shell got claude's patches")
@@ -252,7 +270,7 @@ func TestBuildPlanClaude(t *testing.T) {
 	if got, want := flagValues(p.flags, "--vsock"), []string{home + "/.local/state/mbx/mcp-gateway/s/ab12cd34.sock:41837"}; !slices.Equal(got, want) {
 		t.Errorf("--vsock = %v, want %v", got, want)
 	}
-	if s := p.conf["scripts"].(map[string]any)[setupScriptName].(string); !strings.Contains(s, "VSOCK-CONNECT:2:41837") {
+	if s := setupScript(features(cfg, "/work/repo", gateway)); !strings.Contains(s, "VSOCK-CONNECT:2:41837") {
 		t.Errorf("setup script lacks the MCP bridge:\n%s", s)
 	}
 

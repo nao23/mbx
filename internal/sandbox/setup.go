@@ -8,8 +8,8 @@ import (
 	"github.com/nao23/mbx/internal/msb"
 )
 
-// setupScriptName is registered as a microsandbox script (/.msb/scripts/<name>, on PATH).
-const setupScriptName = "mbx-setup"
+// setupLabel names the setup script in progress and errors.
+const setupLabel = "setup script"
 
 // setupScript joins the features' parts, each in a subshell so an early exit in one doesn't skip the rest.
 func setupScript(features []feature.Feature) string {
@@ -25,14 +25,17 @@ func setupScript(features []feature.Feature) string {
 	return "set -e\n\n" + strings.Join(parts, "\n\n") + "\n"
 }
 
-// setupGuest runs the setup script on every start; its steps skip what's already done.
+// setupGuest runs the setup script on every start; its steps skip what's already done. The script is passed
+// on stdin each time rather than registered when the sandbox is created, so a sandbox kept from an older mbx
+// runs the current one.
 func setupGuest(r *msb.Runner, features []feature.Feature, name string) error {
-	if setupScript(features) == "" {
+	s := setupScript(features)
+	if s == "" {
 		return nil
 	}
-	r.Step(msb.OnVM, "Set up the VM", "Runs "+setupScriptName+", registered in sandbox.yaml above, for the enabled features")
-	if err := r.Task(setupScriptName, "exec", name, "--", setupScriptName); err != nil {
-		return fmt.Errorf("%s: %w", setupScriptName, err)
+	r.Step(msb.OnVM, "Set up the VM", "Runs the setup script for the enabled features, passed on stdin")
+	if err := r.TaskInput(setupLabel, s, "exec", "--stream", name, "--", "sh", "-s"); err != nil {
+		return fmt.Errorf("%s: %w", setupLabel, err)
 	}
 	return nil
 }

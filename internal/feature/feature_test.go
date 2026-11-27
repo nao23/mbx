@@ -94,11 +94,6 @@ func TestEnabled(t *testing.T) {
 		t.Errorf("setup order (first words) = %v, want %v", setups, want)
 	}
 
-	cfg = loadConfig(t, "setup: echo ${HOME}\n")
-	if _, err := Enabled(cfg); err == nil || !strings.Contains(err.Error(), "${VAR}") {
-		t.Errorf("setup with ${...}: err = %v, want the ${VAR} error", err)
-	}
-
 	cfg = loadConfig(t, "docker: {enabled: false, emulation: false}\nuv: {vm_venv: false}\n")
 	if features, _ := Enabled(cfg); len(features) != 0 {
 		t.Errorf("Enabled with nothing enabled = %d features, want none", len(features))
@@ -223,8 +218,7 @@ func TestECR(t *testing.T) {
 	}
 }
 
-// The scripts go into msb create's config, where microsandbox expands ${VAR} from the host's environment
-// (which holds the real tokens), so they must not use that form. They also must parse as POSIX sh
+// The scripts must parse as POSIX sh
 func TestScripts(t *testing.T) {
 	parser := syntax.NewParser(syntax.Variant(syntax.LangPOSIX))
 	for name, script := range map[string]string{
@@ -234,9 +228,6 @@ func TestScripts(t *testing.T) {
 		"ecr.sh":       ecrScript,
 		"github.sh":    githubScript,
 	} {
-		if strings.Contains(script, "${") {
-			t.Errorf("%s contains ${...}, which microsandbox expands on the host", name)
-		}
 		if _, err := parser.Parse(strings.NewReader(script), name); err != nil {
 			t.Errorf("%s doesn't parse: %v", name, err)
 		}

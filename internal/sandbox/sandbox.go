@@ -237,13 +237,6 @@ func validate(cfg *config.Config) error {
 	if _, err := microsandboxFlags(cfg); err != nil {
 		return err
 	}
-	if scripts, ok := cfg.Microsandbox["scripts"].(map[string]any); ok {
-		for k := range scripts {
-			if strings.HasPrefix(k, "mbx-") {
-				return fmt.Errorf("microsandbox_config.scripts: %s: the mbx- prefix is reserved for mbx", k)
-			}
-		}
-	}
 	return nil
 }
 

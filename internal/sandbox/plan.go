@@ -69,16 +69,6 @@ func buildPlan(cfg *config.Config, workspace, name string, gateway *mcpgateway.R
 		}
 	}
 	features := features(cfg, workspace, gateway)
-	if s := setupScript(features); s != "" {
-		scripts := map[string]any{}
-		if us, ok := conf["scripts"].(map[string]any); ok {
-			for k, v := range us {
-				scripts[k] = v
-			}
-		}
-		scripts[setupScriptName] = s
-		conf["scripts"] = scripts
-	}
 	// The features' patches go after the user's own
 	for _, f := range features {
 		if len(f.Patches) > 0 {
