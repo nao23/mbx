@@ -145,6 +145,52 @@ func Login(name string, s config.MCPServer) error {
 	return nil
 }
 
+// LoginAll logs in to the servers in claude.mcp_servers mbx isn't logged in to (see LoggedIn), one by one.
+func LoginAll(cfg *config.Config) error {
+	if len(cfg.Claude.MCPServers) == 0 {
+		return errors.New("claude.mcp_servers has no servers")
+	}
+	done := 0
+	for _, name := range cfg.Claude.MCPServers {
+		s, ok := cfg.MCPServer(name)
+		if !ok {
+			return fmt.Errorf("%s has no url in mcp_gateway.servers or the host's ~/.claude.json (stdio servers aren't supported)", name)
+		}
+		if ok, err := LoggedIn(name, s.URL); err != nil {
+			return err
+		} else if ok {
+			continue
+		}
+		if err := Login(name, s); err != nil {
+			return err
+		}
+		done++
+	}
+	if done == 0 {
+		ui.Done("already logged in to all of "+strings.Join(cfg.Claude.MCPServers, ", "), "")
+	}
+	return nil
+}
+
+// LogoutAll logs out of the servers in claude.mcp_servers mbx is logged in to.
+func LogoutAll(cfg *config.Config) error {
+	done := 0
+	for _, name := range cfg.Claude.MCPServers {
+		found, err := removeLogin(name)
+		if err != nil {
+			return err
+		}
+		if found {
+			ui.Done("logged out of "+name, "")
+			done++
+		}
+	}
+	if done == 0 {
+		ui.Done("not logged in to any server in claude.mcp_servers", "")
+	}
+	return nil
+}
+
 func Logout(name string) error {
 	found, err := removeLogin(name)
 	if err != nil {

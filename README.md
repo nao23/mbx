@@ -266,7 +266,7 @@ mcp_gateway:
       callback_port: 13579         # the redirect port registered for client_id
 ```
 
-- **`mcp_servers`**: defined by `mcp_gateway.servers`, or else the host claude's user-scope server of the same name (`claude mcp add --scope user`). Log in once with `mbx mcp login <server>`; the gateway refreshes the tokens
+- **`mcp_servers`**: defined by `mcp_gateway.servers`, or else the host claude's user-scope server of the same name (`claude mcp add --scope user`). Log in once with `mbx mcp login [<server>]` (without one, to those not logged in to); the gateway refreshes the tokens
 - **`claude_ai_connectors`**: use the host claude's claude.ai login. When it expires, use the host's claude once
 
 `mbx mcp` shows the logins and their expiry. See [docs/mcp-gateway.md](docs/mcp-gateway.md) for how the gateway works, server definitions and logins.

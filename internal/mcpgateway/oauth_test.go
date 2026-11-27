@@ -204,3 +204,40 @@ func TestSetupWithoutLogin(t *testing.T) {
 		t.Errorf("Setup with a login: %v", err)
 	}
 }
+
+// Without a server named, login logs in to the servers in claude.mcp_servers mbx isn't logged in to, and
+// logout logs out of those it is
+func TestLoginLogoutAll(t *testing.T) {
+	keyring.MockInit()
+	f := newFakeAuth(t, true, false)
+	url := f.URL + "/mcp"
+	cfg := &config.Config{}
+	cfg.Claude.MCPServers = []string{"in", "out", "elsewhere"}
+	cfg.MCPGateway.Servers = map[string]config.MCPServer{"in": {URL: url}, "out": {URL: url}, "elsewhere": {URL: url}}
+	saveLogin("in", &login{URL: url, AccessToken: "kept"})
+	saveLogin("elsewhere", &login{URL: "https://old.example.com/mcp", AccessToken: "old"})
+
+	if err := LoginAll(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := loadLogin("in"); l == nil || l.AccessToken != "kept" {
+		t.Errorf("a server logged in to was logged in to again: %+v", l)
+	}
+	for _, s := range []string{"out", "elsewhere"} {
+		if ok, _ := LoggedIn(s, url); !ok {
+			t.Errorf("%s: not logged in after LoginAll", s)
+		}
+	}
+
+	if err := LogoutAll(cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range cfg.Claude.MCPServers {
+		if l, _ := loadLogin(s); l != nil {
+			t.Errorf("%s: still logged in after LogoutAll", s)
+		}
+	}
+	if err := LogoutAll(cfg); err != nil {
+		t.Errorf("LogoutAll with no logins: %v", err)
+	}
+}

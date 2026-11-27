@@ -434,11 +434,14 @@ login; the gateway refreshes the token after that. claude.ai connectors use the 
 			RunE:  status,
 		},
 		&cobra.Command{
-			Use:   "login SERVER",
-			Short: "Log in to a server in claude.mcp_servers with OAuth in the browser",
-			Args:  cobra.ExactArgs(1),
+			Use:   "login [SERVER]",
+			Short: "Log in to a server in claude.mcp_servers with OAuth in the browser (default: those not logged in to)",
+			Args:  cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return withConfig(func(cfg *config.Config) error {
+					if len(args) == 0 {
+						return mcpgateway.LoginAll(cfg)
+					}
 					s, ok := cfg.MCPServer(args[0])
 					if !ok {
 						return fmt.Errorf("%s has no url in mcp_gateway.servers or the host's ~/.claude.json (stdio servers aren't supported)", args[0])
@@ -448,10 +451,15 @@ login; the gateway refreshes the token after that. claude.ai connectors use the 
 			},
 		},
 		&cobra.Command{
-			Use:   "logout SERVER",
-			Short: "Log out of a server (remove mbx's login to it)",
-			Args:  cobra.ExactArgs(1),
-			RunE:  func(cmd *cobra.Command, args []string) error { return mcpgateway.Logout(args[0]) },
+			Use:   "logout [SERVER]",
+			Short: "Log out of a server (remove mbx's login to it; default: the servers in claude.mcp_servers)",
+			Args:  cobra.MaximumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				if len(args) == 0 {
+					return withConfig(mcpgateway.LogoutAll)
+				}
+				return mcpgateway.Logout(args[0])
+			},
 		},
 	)
 	return cmd
