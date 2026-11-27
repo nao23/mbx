@@ -23,7 +23,7 @@ func replaced(path, key string) bool {
 }
 
 // Load layers one config file over the defaults: file if not empty, else the one for the workspace (see
-// Choose). Config files aren't layered over each other.
+// Choose), or none. Config files aren't layered over each other.
 func Load(workspace, file string) (*Config, error) {
 	path, why := file, "given with --config"
 	if file == "" {
@@ -33,25 +33,28 @@ func Load(workspace, file string) (*Config, error) {
 			return nil, err
 		}
 		why = "its directories has " + matched
-		if matched == "" {
-			why = "no file's directories has " + workspace
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				why += ", and it's missing: the defaults alone"
-			}
+		if path == "" {
+			why = "no config file's directories has " + workspace + ": the defaults alone"
 		}
 	} else if _, err := os.Stat(file); err != nil {
 		return nil, err
 	}
 
-	m, err := readConfigFile(path)
-	if err != nil {
-		return nil, err
+	m := map[string]any{}
+	if path != "" {
+		var err error
+		if m, err = readConfigFile(path); err != nil {
+			return nil, err
+		}
 	}
 	cfg, err := layer(m)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
-	cfg.dir, cfg.path, cfg.why = filepath.Dir(path), path, why
+	cfg.dir, cfg.path, cfg.why = Dir(), path, why
+	if path != "" {
+		cfg.dir = filepath.Dir(path)
+	}
 
 	return cfg, nil
 }
@@ -74,8 +77,9 @@ func layer(m map[string]any) (*Config, error) {
 }
 
 // Choose picks the config file for the workspace from the config dir's *.yaml: the one whose directories
-// has the workspace or the deepest of its parents (matched), else config.yaml, which has no directories
-// (matched is empty). A directory in two files is an error, whichever the workspace
+// has the workspace or the deepest of its parents (matched), or none (an empty path). Every file lists
+// some (directories: ["~"] makes one for anywhere under the home dir that no other file covers). A directory
+// in two files is an error, whichever the workspace
 func Choose(workspace string) (path, matched string, err error) {
 	dir := Dir()
 	files, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
@@ -90,13 +94,13 @@ func Choose(workspace string) (path, matched string, err error) {
 			return "", "", err
 		}
 		dirs := StringList(m["directories"])
-		switch {
-		case filepath.Base(f) == DefaultFile && len(dirs) > 0:
-			return "", "", fmt.Errorf("%s: directories: %s is used where no other file is, so it takes none", f, DefaultFile)
-		case filepath.Base(f) != DefaultFile && len(dirs) == 0:
-			return "", "", fmt.Errorf("%s: directories: list the directories it's used in (only %s takes none)", f, DefaultFile)
+		if len(dirs) == 0 {
+			return "", "", fmt.Errorf(`%s: directories: list the directories it's used in ("~" for anywhere under the home dir)`, f)
 		}
 		for _, d := range dirs {
+			if d == "<nil>" {
+				return "", "", fmt.Errorf(`%s: directories: a bare ~ is null in YAML; write "~" for the home dir`, f)
+			}
 			d = filepath.Clean(ExpandHome(d))
 			if !filepath.IsAbs(d) {
 				return "", "", fmt.Errorf("%s: directories: %s isn't an absolute path (or one starting with ~)", f, d)
@@ -114,7 +118,7 @@ func Choose(workspace string) (path, matched string, err error) {
 	if deepest != "" {
 		return listedIn[deepest], deepest, nil
 	}
-	return filepath.Join(dir, DefaultFile), "", nil
+	return "", "", nil
 }
 
 // readConfigFile reads a config file. A missing one is empty

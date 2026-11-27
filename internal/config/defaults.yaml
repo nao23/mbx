@@ -2,7 +2,7 @@
 version: 1
 
 # The directories this file is used in, subdirectories included (absolute, or starting with ~). Every file
-# but config.yaml lists some; config.yaml is used where no other file does
+# lists some; the file with the deepest match is used (["~"] for anywhere under the home dir)
 directories: []
 
 # What mbx run shell starts (ARGS after -- replace it)

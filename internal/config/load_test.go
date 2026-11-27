@@ -49,10 +49,10 @@ func addConfig(t *testing.T, dir, name, yamlText string) string {
 	return path
 }
 
-// The file whose directories has the workspace or the deepest of its parents is used, else config.yaml. Only
-// that one is layered over the defaults: network.allow is appended to the defaults', other lists replaced
+// The file whose directories has the workspace or the deepest of its parents is used, else none. Only that
+// one is layered over the defaults: network.allow is appended to the defaults', other lists replaced
 func TestLoadChoosesByDirectory(t *testing.T) {
-	dir := writeConfig(t, "command: [zsh]\n")
+	dir := writeConfig(t, "directories: [/home]\ncommand: [zsh]\n")
 	work := addConfig(t, dir, "work.yaml", `
 		directories: [/work]
 		command: [fish]
@@ -67,7 +67,8 @@ func TestLoadChoosesByDirectory(t *testing.T) {
 		"/work/repo2":                      work, // a sibling with a common prefix, not a subdirectory
 		"/work":                            work,
 		filepath.Join(home, "src", "repo"): repo,
-		"/other":                           filepath.Join(dir, "config.yaml"),
+		"/home/u":                          filepath.Join(dir, "default.yaml"),
+		"/other":                           "",
 	} {
 		cfg, err := Load(workspace, "")
 		if err != nil {
@@ -80,7 +81,7 @@ func TestLoadChoosesByDirectory(t *testing.T) {
 
 	cfg, _ := Load("/work/repo", "")
 	if !slices.Equal(cfg.Command, []string{"bash"}) || !cfg.Keep {
-		t.Errorf("command = %v, keep = %v; want [bash] (config.yaml isn't layered) and true", cfg.Command, cfg.Keep)
+		t.Errorf("command = %v, keep = %v; want [bash] (default.yaml isn't layered) and true", cfg.Command, cfg.Keep)
 	}
 	cfg, _ = Load("/work", "")
 	if !slices.Equal(cfg.Command, []string{"fish"}) || !slices.Equal(allowList(cfg), []string{"a.example.com"}) {
@@ -108,9 +109,9 @@ func TestLoadGivenFile(t *testing.T) {
 func TestChooseErrors(t *testing.T) {
 	for _, tc := range []struct{ name, config, other, want string }{
 		{"in two files", "", "directories: [/a/b]\n", "/a/b is in both"},
-		{"config.yaml with directories", "directories: [/x]\n", "", "takes none"},
-		{"another file without them", "", "keep: true\n", "list the directories"},
+		{"a file without them", "", "keep: true\n", "list the directories"},
 		{"a relative directory", "", "directories: [repo]\n", "isn't an absolute path"},
+		{"a bare ~ (null in YAML)", "", "directories: [~]\n", `write "~"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := writeConfig(t, tc.config)
@@ -145,7 +146,7 @@ func TestLoadErrors(t *testing.T) {
 	for _, tc := range []struct{ name, yaml, want string }{
 		{"unknown key", "kep: true\n", "kep"},
 		{"unknown nested key", "docker: {enable: false}\n", "enable"},
-		{"broken yaml", "keep: [\n", "config.yaml"},
+		{"broken yaml", "keep: [\n", "default.yaml"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			writeConfig(t, tc.yaml)

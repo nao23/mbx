@@ -31,8 +31,7 @@ Put these files in the config dir `~/.config/mbx/`:
 
 | File | Contents |
 |---|---|
-| `config.yaml` | The config (see below) |
-| `<name>.yaml` | (Optional) Configs for some directories, used there instead of `config.yaml` (see below) |
+| `<name>.yaml` | Configs, each for the directories it lists (see below). Without one, the defaults alone apply |
 | `sandbox-prompt.md` | (Optional) Notes appended to [the built-in prompt](internal/agent/sandbox-prompt.md) given to Claude in the VM, named in `claude.extra_system_prompt` |
 
 Issue a long-lived Claude Code token with `claude setup-token`. By default mbx reads it from the host's `CLAUDE_CODE_OAUTH_TOKEN` environment variable:
@@ -108,7 +107,7 @@ mbx run claude --config ~/work.yaml  # use this config file (any command takes -
 
 ## Configuration
 
-The config file is `~/.config/mbx/config.yaml` (the config dir can be changed with the `MBX_CONFIG_DIR` environment variable). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml), which describes every setting). The minimal config is just `version: 1`.
+Config files are `~/.config/mbx/*.yaml` (the config dir can be changed with the `MBX_CONFIG_DIR` environment variable), each used in the directories it lists (see [Configs per directory](#configs-per-directory)). Anything left out takes the built-in default ([`internal/config/defaults.yaml`](internal/config/defaults.yaml), which describes every setting). The minimal config is `version: 1` and `directories`.
 
 The config has a part passed to microsandbox as-is, and mbx's extensions.
 
@@ -121,6 +120,7 @@ The config has a part passed to microsandbox as-is, and mbx's extensions.
 
 ```yaml
 version: 1
+directories: ["~"]              # anywhere under the home dir no other file covers
 
 # --- Passed to microsandbox as-is ---
 microsandbox_config:            # msb create --conf
@@ -192,7 +192,7 @@ secret_sources:                 # where the values of secrets in microsandbox_co
 
 ### Configs per directory
 
-For directories that need a different config, put another config file in the config dir, with the directories it's used in:
+For directories that need a different config, put another config file in the config dir:
 
 ```yaml
 # ~/.config/mbx/work.yaml
@@ -202,7 +202,7 @@ docker:
 github: {enabled: true}
 ```
 
-- The file whose `directories` has the working directory, or the deepest of its parents, is used. Elsewhere, `config.yaml` is used; it takes no `directories`
+- The file whose `directories` has the working directory, or the deepest of its parents, is used. So a file with `directories: ["~"]` is used where no file lists a deeper directory. Where no file matches, the defaults alone apply
 - Only that one file is used. Config files aren't layered over each other, so a file has everything that differs from the defaults
 - `--config FILE` uses that file instead, wherever it is
 

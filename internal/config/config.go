@@ -98,9 +98,6 @@ type GitHubConfig struct {
 	Allow          []string      `yaml:"allow"`
 }
 
-// DefaultFile is the config file used where no other file's directories has the workspace
-const DefaultFile = "config.yaml"
-
 // Dir is the config dir, which holds the config files
 func Dir() string {
 	if d := os.Getenv("MBX_CONFIG_DIR"); d != "" {

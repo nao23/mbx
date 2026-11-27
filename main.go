@@ -32,7 +32,8 @@ func newRootCmd() *cobra.Command {
 at the same path as on the host.
 
 Config files are in ~/.config/mbx (override with the MBX_CONFIG_DIR env var): the one whose directories
-has the current directory, else config.yaml. --config gives one instead.`,
+has the current directory or the deepest of its parents is used, else none (the defaults alone). --config
+gives one instead.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		// Check that the host commands the command runs are there, before it does anything
@@ -142,6 +143,9 @@ ARGS after -- are passed to claude; for shell they replace the configured comman
 					return err
 				}
 				path, why := cfg.File()
+				if path == "" {
+					path = "none"
+				}
 				fmt.Printf("# Config file: %s\n#   (%s)\n\n%s", path, why, out)
 				return nil
 			}
