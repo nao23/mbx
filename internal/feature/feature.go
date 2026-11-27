@@ -3,18 +3,31 @@
 package feature
 
 import (
+	"context"
+
 	"github.com/nao23/mbx/internal/config"
 	"github.com/nao23/mbx/internal/msb"
 	"github.com/nao23/mbx/internal/secret"
 )
 
 type Feature struct {
-	Name    string   // the config key that enables it, or the agent's name
-	Secret  *Secret  // the VM gets a placeholder, swapped for the real value only when sent to one of Hosts
-	Allow   []string // domains, and rules by IP (CIDR:proto:port), which go before the domains
-	Flags   []msb.Flag
-	Patches []any // applied at creation, not on reconnect
-	Setup   *Setup
+	Name      string   // the config key that enables it, or the agent's name
+	Secret    *Secret  // the VM gets a placeholder, swapped for the real value only when sent to one of Hosts
+	Allow     []string // domains, and rules by IP (CIDR:proto:port), which go before the domains
+	Flags     []msb.Flag
+	Patches   []any  // applied at creation, not on reconnect
+	Setup     *Setup // run in the VM on every start
+	PostStart *HostTask
+	Prompt    string // a line for the sandbox prompt given to claude
+}
+
+// HostTask is a one-shot task on the host, run once the VM is set up. It runs alongside the agent, which
+// doesn't wait for it, and is stopped when the agent exits.
+type HostTask struct {
+	Title, Detail string
+	// Prepare runs before the agent starts: checks, and progress lines (in dry-run, the commands). It returns
+	// what to run alongside the agent, which prints nothing, or nil for nothing.
+	Prepare func(r *msb.Runner, name string) (run func(ctx context.Context), err error)
 }
 
 type Secret struct {

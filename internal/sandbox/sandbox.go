@@ -94,11 +94,17 @@ func (s *Sandbox) Run(args []string) (int, error) {
 		}
 	}
 
-	if err := setupGuest(r, features(cfg, s.workspace, gateway), name); err != nil {
+	fs := features(cfg, s.workspace, gateway)
+	if err := setupGuest(r, fs, name); err != nil {
 		return 0, err
 	}
+	stop, err := postStart(r, fs, name)
+	if err != nil {
+		return 0, err
+	}
+	defer stop()
 
-	err := s.start(args)
+	err = s.start(args)
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		return exitErr.ExitCode(), nil

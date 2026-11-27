@@ -60,6 +60,10 @@ docker:
   enabled: true
   disk: 20G
   emulation: true
+  # Images to copy from the host's Docker to the VM's (docker save | docker load), so the VM needs no login
+  # to their registries. Copied in the background once the agent starts, the VM's own platform first,
+  # skipping those already in the VM. Progress is in /run/mbx/host-images in the VM
+  host_images: []
   # Log the VM's Docker in to an ECR registry. Also allows the S3 bucket for its image layers
   ecr:
     enabled: false

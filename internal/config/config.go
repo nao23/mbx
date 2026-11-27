@@ -58,10 +58,11 @@ type ClaudeConfig struct {
 }
 
 type DockerConfig struct {
-	Enabled   bool      `yaml:"enabled"`
-	Disk      string    `yaml:"disk"`
-	Emulation bool      `yaml:"emulation"`
-	ECR       ECRConfig `yaml:"ecr"`
+	Enabled    bool      `yaml:"enabled"`
+	Disk       string    `yaml:"disk"`
+	Emulation  bool      `yaml:"emulation"`
+	HostImages []string  `yaml:"host_images"`
+	ECR        ECRConfig `yaml:"ecr"`
 }
 
 type MCPServer struct {

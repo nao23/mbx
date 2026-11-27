@@ -111,6 +111,20 @@ func TestDocker(t *testing.T) {
 	}
 }
 
+// docker.host_images copies the images after start, telling claude about it, and needs docker
+func TestDockerHostImages(t *testing.T) {
+	if f, _ := newDocker(loadConfig(t, "version: 1\n")); f.PostStart != nil || f.Prompt != "" {
+		t.Errorf("newDocker with no host images = %+v, want no host task or prompt line", f)
+	}
+	f, err := newDocker(loadConfig(t, "docker: {host_images: [mysql:8.0]}\n"))
+	if err != nil || f.PostStart == nil || !strings.Contains(f.Prompt, hostImagesFile) {
+		t.Errorf("newDocker = %+v, %v; want a host task and a prompt line", f, err)
+	}
+	if _, err := newDocker(loadConfig(t, "docker: {enabled: false, host_images: [mysql:8.0]}\n")); err == nil {
+		t.Error("host_images with docker disabled: want an error")
+	}
+}
+
 var githubHosts = []string{"codeload.github.com", "*.githubusercontent.com", "ghcr.io"}
 
 // github sends GH_TOKEN (from the host's GH_TOKEN) to github.com (git) and api.github.com (gh), and allows

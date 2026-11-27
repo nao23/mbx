@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/nao23/mbx/internal/msb"
@@ -58,19 +57,10 @@ func BuildImage(b Build, dryRun bool) error {
 	return buildImage(&msb.Runner{DryRun: dryRun}, b)
 }
 
-// vmPlatform is the VMs' platform. microsandbox runs them with the host's architecture: on macOS that's
-// Apple Silicon's arm64, even for an amd64 mbx under Rosetta.
-func vmPlatform() string {
-	if runtime.GOOS == "darwin" {
-		return "linux/arm64"
-	}
-	return "linux/" + runtime.GOARCH
-}
-
 // buildImage builds the image with the host Docker for the VMs' platform and loads it with docker save | msb
 // load. The built-in Dockerfile needs no build context, so it's passed on stdin, labeled with its hash.
 func buildImage(r *msb.Runner, b Build) error {
-	args := []string{"build", "--platform", vmPlatform()}
+	args := []string{"build", "--platform", msb.VMPlatform()}
 	if b.Dockerfile == "" {
 		b.Image, b.Context = DefaultImage, "-"
 		args = append(args, "--label", labelDockerfile+"="+dockerfileHash())

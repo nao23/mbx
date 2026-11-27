@@ -248,6 +248,12 @@ func (c *claude) Command(r *msb.Runner, args []string) ([]string, string) {
 	r.Step(msb.OnVM, "Start claude", "The global CLAUDE.md is written for the host, so append a description of the sandbox to the system prompt")
 	// dry-run shows where the long prompt comes from instead of its contents
 	prompt, shownPrompt := sandboxPrompt, "<mbx's built-in prompt"
+	fs, _ := feature.Enabled(c.cfg) // checked by validate
+	for _, f := range fs {
+		if f.Prompt != "" {
+			prompt += f.Prompt + "\n"
+		}
+	}
 	if p := c.cfg.Resolve(c.cfg.Claude.ExtraSystemPrompt); p != "" {
 		extra, err := os.ReadFile(p)
 		if err != nil {

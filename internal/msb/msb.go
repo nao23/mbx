@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/nao23/mbx/internal/ui"
@@ -281,4 +282,13 @@ func List(label string) ([]SandboxInfo, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+// VMPlatform is the VMs' platform. microsandbox runs them with the host's architecture: on macOS that's
+// Apple Silicon's arm64, even for an amd64 mbx under Rosetta.
+func VMPlatform() string {
+	if runtime.GOOS == "darwin" {
+		return "linux/arm64"
+	}
+	return "linux/" + runtime.GOARCH
 }

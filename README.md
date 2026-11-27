@@ -165,6 +165,7 @@ docker:
   enabled: true
   disk: 20G                     # disk for Docker (removed with the sandbox)
   emulation: true               # run other architectures under QEMU
+  host_images: [mysql:8.0]      # copy from the host's Docker in the background (no registry login in the VM)
   ecr:                          # log docker in the VM in to ECR
     enabled: false
     registry: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
