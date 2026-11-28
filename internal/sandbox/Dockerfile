@@ -1,8 +1,5 @@
-# mbx's default image, embedded in mbx and built by it (see image.go)
-
-# Only the uv binaries. Before the first FROM, as the ARG is used in FROM
-ARG UV_VERSION=latest
-FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+# mbx's default image, embedded in mbx and built by it (see image.go). It has no language toolchains: add
+# them in an image built on this one
 
 # Only the native binary from the npm package, so the image has no Node.js
 FROM node:24-bookworm-slim AS claude-code
@@ -20,11 +17,8 @@ FROM ubuntu:26.04
 # - gh: GitHub CLI, authenticated with $GH_TOKEN by the github feature
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      git python3 python3-pip python3-venv curl ca-certificates jq ripgrep less vim-tiny unzip make \
+      git curl ca-certificates jq ripgrep less vim-tiny unzip make \
       docker.io docker-compose-v2 docker-buildx iptables nftables dnsmasq-base qemu-user qemu-user-binfmt \
       build-essential socat gh \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=claude-code /claude /usr/local/bin/claude
-COPY --from=uv /uv /uvx /usr/local/bin/
-# Where uv tool install puts commands
-ENV PATH="/root/.local/bin:${PATH}"

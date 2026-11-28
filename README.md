@@ -52,17 +52,18 @@ claude:
   secret_source: {keyring: claude-microsandbox-token}
 ```
 
-By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, uv, etc.). `mbx run` builds it when it's missing or outdated. To update Claude Code in it, run `mbx build --default -- --no-cache`.
+By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Dockerfile`](internal/sandbox/Dockerfile) (Ubuntu with Claude Code, Docker Engine, QEMU, git, etc.; no language toolchains). `mbx run` builds it when it's missing or outdated. To update Claude Code in it, run `mbx build --default -- --no-cache`.
 
 ### Using your own image
 
-The default image has what mbx's features use and common tools. To add more, build an image on the default one with `mbx build`: like `docker build`, but it also loads the image into microsandbox.
+The default image has what mbx's features use and common tools, but no language toolchains. To add them, build an image on the default one with `mbx build`: like `docker build`, but it also loads the image into microsandbox.
 
 ```dockerfile
 FROM mbx-default:latest
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      pkg-config python3-dev default-libmysqlclient-dev \
+      python3 python3-dev pkg-config default-libmysqlclient-dev \
  && rm -rf /var/lib/apt/lists/*
 ```
 
@@ -156,7 +157,7 @@ microsandbox_flags:             # msb create flags (flag name: value)
 command: [bash]                 # the command mbx run shell starts
 keep: false                     # don't remove the sandbox on exit (same as run --keep)
 setup: |                        # run in the VM on every start, before the agent
-  uv sync
+  make deps
 
 claude:                         # used only by mbx run (claude), not mbx run shell
   secret_source: {env: CLAUDE_CODE_OAUTH_TOKEN}   # where the value of CLAUDE_CODE_OAUTH_TOKEN comes from (default: the host env var)

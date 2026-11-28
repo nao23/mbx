@@ -89,7 +89,8 @@ github:
   allow: []
 
 # uv in the VM keeps a project's virtualenv in the VM (/root/.venvs/<project path>) instead of the
-# project's .venv, which is shared with the host and holds binaries for the host's OS
+# project's .venv, which is shared with the host and holds binaries for the host's OS. Nothing to do when
+# the image has no uv (the default image doesn't)
 uv:
   vm_venv: true
 
