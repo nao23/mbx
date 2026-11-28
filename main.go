@@ -28,12 +28,14 @@ func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "mbx",
 		Short: "Run a coding agent (or a shell) in a microsandbox microVM",
-		Long: `mbx runs a coding agent (or a shell) in a microsandbox microVM, with the current directory mounted
-at the same path as on the host.
+		Long: dedent(`
+			mbx runs a coding agent (or a shell) in a microsandbox microVM, with the current directory mounted
+			at the same path as on the host.
 
-Config files are in ~/.config/mbx (override with the MBX_CONFIG_DIR env var): the one whose directories
-has the current directory or the deepest of its parents is used, else none (the defaults alone). --config
-gives one instead.`,
+			Config files are in ~/.config/mbx (MBX_CONFIG_DIR overrides it). mbx uses the one whose directories
+			lists the current directory or its deepest parent; with none, it uses the defaults alone. --config
+			gives one instead.
+		`),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		// Check that the host commands the command runs are there, before it does anything
@@ -74,6 +76,22 @@ var (
 	needsMsbDocker = map[string]string{requires: "msb,docker"}
 )
 
+// dedent lets help text be indented with the code: it drops the blank lines around s, and the indent of its
+// first line from every line.
+func dedent(s string) string {
+	lines := strings.Split(strings.Trim(s, "\n"), "\n")
+	indent := lines[0][:len(lines[0])-len(strings.TrimLeft(lines[0], "\t"))]
+	for i, line := range lines {
+		lines[i] = strings.TrimPrefix(line, indent)
+	}
+	return strings.TrimRight(strings.Join(lines, "\n"), " \t\n")
+}
+
+// examples formats commands for a command's Example, indented as cobra's help expects.
+func examples(cmds ...string) string {
+	return "  " + strings.Join(cmds, "\n  ")
+}
+
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
@@ -96,10 +114,22 @@ func newConfigCmd() *cobra.Command {
 	edit := &cobra.Command{
 		Use:   "edit [--new] [NAME]",
 		Short: "Open a config file in the editor, and check it",
-		Long: `Open a config file in the editor ($VISUAL, $EDITOR, else vi), and check it once the editor exits: the one
-the current directory uses, or NAME in the config dir (.yaml may be left out), or the file given with
---config. With --new, make NAME (default: the directory's name) first, for the current directory alone,
-with the settings of the file it uses.`,
+		Long: dedent(`
+			Open a config file in the editor ($VISUAL, $EDITOR, else vi), and check it when the editor exits.
+
+			Which file:
+			  (none)    the one the current directory uses
+			  NAME      NAME.yaml in the config dir (.yaml may be left out)
+			  --config  the given file
+
+			With --new, create NAME (default: the directory's name) for the current directory alone first,
+			copying the settings of the file it uses now.
+		`),
+		Example: examples(
+			"mbx config edit",
+			"mbx config edit work",
+			"mbx config edit --new",
+		),
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace, err := os.Getwd()
@@ -163,18 +193,22 @@ func newRunCmd() *cobra.Command {
 		Use:         "run claude|shell [flags] [-- ARGS...]",
 		Annotations: needsMsb,
 		Short:       "Start claude or a shell in a sandbox for the current directory",
-		Long: `Create a sandbox for the current directory, mounted at the same path as on the host, and start claude
-or a shell in it.
+		Long: dedent(`
+			Create a sandbox for the current directory, mounted at the same path as on the host, and start
+			claude or a shell in it.
 
-The sandbox is removed on exit unless --keep is given. If a sandbox with the same name exists, run
-connects to it instead, and leaves it running on exit.
+			The sandbox is removed on exit unless --keep is given. If a sandbox with the same name exists, run
+			connects to it instead and leaves it running on exit.
 
-ARGS after -- are passed to claude; for shell they replace the configured command (default: bash).`,
-		Example: `  mbx run claude
-  mbx run claude -- -p "summarize this repo"
-  mbx run shell -- make test
-  mbx run claude --dry-run
-  mbx run shell --show-config`,
+			ARGS after -- go to claude. For shell, they replace the configured command (default: bash).
+		`),
+		Example: examples(
+			"mbx run claude",
+			`mbx run claude -- -p "summarize this repo"`,
+			"mbx run shell -- make test",
+			"mbx run claude --dry-run",
+			"mbx run shell --show-config",
+		),
 		ValidArgsFunction: completeAgent,
 		// Only the agent comes before --, so a stray word isn't passed to claude as a prompt
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -325,11 +359,17 @@ func newSecretCmd() *cobra.Command {
 		Use:         "rotate [flags]",
 		Annotations: needsMsb,
 		Short:       "Fetch the sandboxes' secrets again and swap in the new values",
-		Long: `Fetch the values of the secrets of the current directory's sandboxes (or the one named with --name) again,
-from the sources in the config, and swap them in (running or not) without a restart. Each secret keeps its
-hosts; to add or remove secrets, recreate the sandbox.`,
-		Example: `  mbx secret rotate
-  mbx secret rotate --name shell-repo`,
+		Long: dedent(`
+			Fetch the secrets of the current directory's sandboxes (or the one given with --name) again from
+			the sources in the config, and swap in the new values without a restart. The sandbox may be
+			running or stopped.
+
+			Each secret keeps its hosts. To add or remove secrets, recreate the sandbox.
+		`),
+		Example: examples(
+			"mbx secret rotate",
+			"mbx secret rotate --name shell-repo",
+		),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace, err := os.Getwd()
@@ -357,17 +397,22 @@ func newBuildCmd() *cobra.Command {
 		Use:         "build (-t IMAGE [-f DOCKERFILE] [CONTEXT] | --default) [flags] [-- DOCKER_BUILD_ARGS...]",
 		Annotations: needsMsbDocker,
 		Short:       "Build an image for the VMs and load it into microsandbox",
-		Long: `Build an image for the VMs with the host Docker (for the host's architecture, as the VMs have it) and load it
-into microsandbox. As with docker build, the Dockerfile defaults to CONTEXT/Dockerfile and CONTEXT to the current
-directory.
-With --default, build the default image (` + sandbox.DefaultImage + `) from mbx's built-in Dockerfile: run
-builds it when it's missing or outdated, so use this to update what it has, like Claude Code (with
--- --no-cache to skip Docker's cache).
+		Long: dedent(`
+			Build an image for the VMs with the host Docker and load it into microsandbox. It's built for the
+			host's architecture, which the VMs share.
 
-DOCKER_BUILD_ARGS after -- are passed to docker build.`,
-		Example: `  mbx build -t my-sandbox:latest
-  mbx build -t my-sandbox:latest -f sandbox.Dockerfile ./docker
-  mbx build --default -- --no-cache`,
+			As with docker build, the Dockerfile defaults to CONTEXT/Dockerfile, and CONTEXT to the current
+			directory. DOCKER_BUILD_ARGS after -- go to docker build.
+
+			With --default, build the default image (` + sandbox.DefaultImage + `) from mbx's built-in Dockerfile.
+			run builds it when it's missing or outdated; build it yourself to update what it has, like Claude
+			Code (add -- --no-cache to skip Docker's cache).
+		`),
+		Example: examples(
+			"mbx build -t my-sandbox:latest",
+			"mbx build -t my-sandbox:latest -f sandbox.Dockerfile ./docker",
+			"mbx build --default -- --no-cache",
+		),
 		Args: func(cmd *cobra.Command, args []string) error {
 			before := args
 			if dash := cmd.ArgsLenAtDash(); dash >= 0 {
@@ -420,9 +465,12 @@ func newMCPCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mcp",
 		Short: "Manage mbx's logins to MCP servers (default: status)",
-		Long: `Manage the credentials for the MCP servers claude in the VM uses through the MCP gateway
-(claude.mcp_servers and claude.claude_ai_connectors). Log in to each server in claude.mcp_servers once with
-login; the gateway refreshes the token after that. claude.ai connectors use the host claude's login.`,
+		Long: dedent(`
+			Manage the logins for the MCP servers that claude in the VM uses through the MCP gateway.
+
+			  claude.mcp_servers           log in to each once with login; the gateway refreshes the token
+			  claude.claude_ai_connectors  use the host claude's login
+		`),
 		Args: cobra.NoArgs,
 		RunE: status,
 	}
@@ -469,10 +517,15 @@ func newMCPGatewayCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mcp-gw",
 		Short: "Manage the MCP gateway (default: status)",
-		Long: `Manage the MCP gateway on the host, which forwards the MCP requests of claude in the VM with tokens that
-stay on the host. It listens on a unix socket per sandbox, exposed to that sandbox only. One gateway serves
-all sandboxes, and run starts it when needed; restart it after changing a connector's tool permissions on
-claude.ai or updating mbx.`,
+		Long: dedent(`
+			Manage the MCP gateway on the host. It forwards the MCP requests of claude in the VM with tokens
+			that stay on the host.
+
+			The gateway listens on a unix socket per sandbox, exposed to that sandbox only. One gateway serves
+			all sandboxes, and run starts it when needed.
+
+			Restart it after changing a connector's tool permissions on claude.ai, or after updating mbx.
+		`),
 		Args: cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error { return mcpgateway.Status() },
 	}
