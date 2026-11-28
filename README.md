@@ -297,7 +297,6 @@ See [docs/how-it-works.md](docs/how-it-works.md) for the network, Docker in the 
 - Host tools and files outside the mounted directories aren't available in the VM
 - The MCP gateway supports only remote (HTTP) MCP servers, not stdio ones
 - Different projects with the same directory name get the same sandbox name (avoid it with `--name`)
-- Names starting with `mbx-` can't be used in `microsandbox_config.scripts` (they're for mbx's built-in scripts)
 
 ## License
 
