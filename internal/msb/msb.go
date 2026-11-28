@@ -14,8 +14,8 @@ import (
 	"github.com/nao23/mbx/internal/ui"
 )
 
-// Runner runs msb and makes other changes to host state. In dry-run mode they're printed instead of
-// done (state checks still run), so callers don't need to branch on DryRun.
+// Runner runs msb and makes other changes to host state. In dry-run mode they're printed instead of done
+// (state checks still run), so callers don't need to branch on DryRun.
 type Runner struct {
 	DryRun bool
 
@@ -132,8 +132,8 @@ func (r *Runner) Touch(path string) error {
 	return nil
 }
 
-// WriteFile writes a 0600 file in a 0700 dir. Dry-run prints what instead, and RemoveFile then treats the
-// file as existing.
+// WriteFile writes a 0600 file in a 0700 dir. Dry-run prints what instead,
+// and RemoveFile then treats the file as existing.
 func (r *Runner) WriteFile(path string, data []byte, what string) error {
 	if r.DryRun {
 		if r.written == nil {

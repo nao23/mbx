@@ -33,8 +33,8 @@ func Keyring() string {
 	return "the Secret Service keyring"
 }
 
-// AddKeyringItem is the command that adds the keyring item name, for the login user. secret-tool reads
-// the value from stdin.
+// AddKeyringItem is the command that adds the keyring item name, for the login user.
+// secret-tool reads the value from stdin.
 func AddKeyringItem(name string) string {
 	if runtime.GOOS == "darwin" {
 		return "security add-generic-password -s " + shell.Quote(name) + ` -a "$USER" -w '<value>'`

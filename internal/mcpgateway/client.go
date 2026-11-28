@@ -1,7 +1,8 @@
-// Package mcpgateway is the MCP gateway on the host. It listens on a unix socket per sandbox, which msb
-// exposes to that sandbox only, at a vsock port, so the socket tells which sandbox a request comes from
-// without any credential in the VM. It forwards each request with a token kept on the host: mbx's own
-// OAuth login, or for claude.ai connectors (claudeai:<name>) the host claude's token.
+// Package mcpgateway is the MCP gateway on the host.
+// It listens on a unix socket per sandbox, which msb exposes to that sandbox only, at a vsock port,
+// so the socket tells which sandbox a request comes from without any credential in the VM.
+// It forwards each request with a token kept on the host:
+// mbx's own OAuth login, or for claude.ai connectors (claudeai:<name>) the host claude's token.
 package mcpgateway
 
 import (
@@ -322,8 +323,8 @@ func register(r *msb.Runner, name string, servers []string) (*Registration, erro
 	return reg, r.WriteFile(SandboxFile(name), data, "socket ID, servers, session ID")
 }
 
-// VMServerName gives claude.ai connectors the host claude's names (claude_ai_<name>), so tool names and
-// permission rules match the host's.
+// VMServerName gives claude.ai connectors the host claude's names (claude_ai_<name>),
+// so tool names and permission rules match the host's.
 func VMServerName(server string) string {
 	if display, ok := strings.CutPrefix(server, ClaudeAIPrefix); ok {
 		return "claude_ai_" + strings.ReplaceAll(display, " ", "_")
@@ -336,8 +337,8 @@ func URL(port int, server string) string {
 	return fmt.Sprintf("http://127.0.0.1:%d/%s", port, url.PathEscape(server))
 }
 
-// BridgeScript starts socat in the VM, relaying 127.0.0.1:<port> to the vsock port msb exposes the
-// sandbox's socket on.
+// BridgeScript starts socat in the VM, relaying 127.0.0.1:<port> to the vsock port
+// that msb exposes the sandbox's socket on.
 func BridgeScript(port int) string {
 	// /run outlives a stop and pids are reused after the restart, so the pid's process must be socat
 	return fmt.Sprintf(`pid=/run/mbx-mcp-bridge.pid

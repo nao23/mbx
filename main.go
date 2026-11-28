@@ -76,8 +76,8 @@ var (
 	needsMsbDocker = map[string]string{requires: "msb,docker"}
 )
 
-// dedent lets help text be indented with the code: it drops the blank lines around s, and the indent of its
-// first line from every line.
+// dedent lets help text be indented with the code: it drops the blank lines around s,
+// and the indent of its first line from every line.
 func dedent(s string) string {
 	lines := strings.Split(strings.Trim(s, "\n"), "\n")
 	indent := lines[0][:len(lines[0])-len(strings.TrimLeft(lines[0], "\t"))]

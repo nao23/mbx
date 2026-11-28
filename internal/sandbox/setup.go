@@ -46,9 +46,9 @@ func postStart(r *msb.Runner, features []feature.Feature, name string) (stop fun
 	return cancel, nil
 }
 
-// setupGuest runs the setup script on every start; its steps skip what's already done. The script is passed
-// on stdin each time rather than registered when the sandbox is created, so a sandbox kept from an older mbx
-// runs the current one.
+// setupGuest runs the setup script on every start; its steps skip what's already done.
+// The script is passed on stdin each time rather than registered when the sandbox is created,
+// so a sandbox kept from an older mbx runs the current one.
 func setupGuest(r *msb.Runner, features []feature.Feature, name string) error {
 	s := setupScript(features)
 	if s == "" {

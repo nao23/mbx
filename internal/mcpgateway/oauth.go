@@ -220,9 +220,9 @@ type authServer struct {
 	RegistrationEndpoint  string `json:"registration_endpoint"`
 }
 
-// discover finds the authorization server through the protected resource metadata (RFC 9728), named in
-// the 401's WWW-Authenticate or at its well-known URLs. Without it, the server's origin is taken, as in
-// earlier MCP specs. scope is what the server asks for, if it says.
+// discover finds the authorization server through the protected resource metadata (RFC 9728),
+// named in the 401's WWW-Authenticate or at its well-known URLs. Without it, the server's origin is taken,
+// as in earlier MCP specs. scope is what the server asks for, if it says.
 func discover(ctx context.Context, serverURL string) (*authServer, string, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil || u.Host == "" {

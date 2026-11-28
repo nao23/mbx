@@ -11,12 +11,12 @@ command: [bash]
 # Don't remove the sandbox on exit (same as run --keep)
 keep: false
 
-# A shell script run in the VM (in the workspace) on every start, after mbx's own setup and before the
-# agent. Write it to be safe to run again. A failure stops the run
+# A shell script run in the VM (in the workspace) on every start, after mbx's own setup and before the agent.
+# Write it to be safe to run again. A failure stops the run
 setup: ""
 
-# microsandbox's own config (passed to msb create --conf). Only network gets entries added by
-# mbx and is passed via --net-conf
+# microsandbox's own config (passed to msb create --conf).
+# Only network gets entries added by mbx and is passed via --net-conf
 microsandbox_config:
   image: mbx-default:latest    # mbx builds this one from its own Dockerfile; others are pulled by microsandbox
   cpus: 2
@@ -42,18 +42,18 @@ claude:
   # A file whose contents are appended to mbx's built-in sandbox prompt (relative to the config dir), or ""
   extra_system_prompt: ""
   config_dir: /root/.claude-state
-  # MCP servers to use through the MCP gateway, with mbx's own logins: by name in mcp_gateway.servers or the
-  # host claude's user-scope servers (mcpServers in ~/.claude.json)
+  # MCP servers to use through the MCP gateway, with mbx's own logins:
+  # by name in mcp_gateway.servers or the host claude's user-scope servers (mcpServers in ~/.claude.json)
   mcp_servers: []
-  # claude.ai connectors to use through the MCP gateway, by display name (e.g. Slack). Only these use the
-  # host claude's claude.ai token, read from the host keychain (on Linux, ~/.claude/.credentials.json); with
-  # none, mbx never reads it
+  # claude.ai connectors to use through the MCP gateway, by display name (e.g. Slack).
+  # Only these use the host claude's claude.ai token, read from the host keychain
+  # (on Linux, ~/.claude/.credentials.json); with none, mbx never reads it
   claude_ai_connectors: []
   host_share:
     sessions: true
     config: true
-    # Skills in the host's ~/.claude/skills to share read-only, by name, or ["*"] for all. Each is
-    # mounted from where its symlink points. Skills needing host tools won't work in the VM
+    # Skills in the host's ~/.claude/skills to share read-only, by name, or ["*"] for all.
+    # Each is mounted from where its symlink points. Skills needing host tools won't work in the VM
     skills: []
 
 docker:
@@ -88,9 +88,9 @@ github:
   #   gh run view --log
   allow: []
 
-# uv in the VM keeps a project's virtualenv in the VM (/root/.venvs/<project path>) instead of the
-# project's .venv, which is shared with the host and holds binaries for the host's OS. Nothing to do when
-# the image has no uv (the default image doesn't)
+# uv in the VM keeps a project's virtualenv in the VM (/root/.venvs/<project path>)
+# instead of the project's .venv, which is shared with the host and holds binaries for the host's OS.
+# Nothing to do when the image has no uv (the default image doesn't)
 uv:
   vm_venv: true
 
@@ -103,10 +103,11 @@ mcp_gateway:
   # The port in the VM claude sends MCP requests to (127.0.0.1:<port>, relayed by socat), and the vsock
   # port the sandbox's socket is exposed on
   port: 41837
-  # MCP servers mbx logs in to itself with OAuth (mbx mcp login <name>). Tokens are kept in the
-  # host keyring and refreshed by the gateway. What an entry leaves out comes from the host claude's server
-  # of the same name: url, and when the url is the same, client_id and callback_port. So a host claude
-  # server needs an entry only for client_secret_source or scope
+  # MCP servers mbx logs in to itself with OAuth (mbx mcp login <name>).
+  # Tokens are kept in the host keyring and refreshed by the gateway.
+  # What an entry leaves out comes from the host claude's server of the same name:
+  # url, and when the url is the same, client_id and callback_port.
+  # So a host claude server needs an entry only for client_secret_source or scope
   servers: {}
   #   example:
   #     url: https://mcp.example.com/mcp

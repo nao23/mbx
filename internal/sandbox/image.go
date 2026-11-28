@@ -45,8 +45,8 @@ func defaultImageOutdated() string {
 	return ""
 }
 
-// Build is an image to build: Image from Dockerfile with Context, or with no Dockerfile, DefaultImage from
-// mbx's built-in one. DockerArgs are added to docker build's.
+// Build is an image to build: Image from Dockerfile with Context, or with no Dockerfile,
+// DefaultImage from mbx's built-in one. DockerArgs are added to docker build's.
 type Build struct {
 	Image, Dockerfile, Context string
 	DockerArgs                 []string

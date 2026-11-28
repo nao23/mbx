@@ -28,8 +28,8 @@ type plan struct {
 // Single-valued flags mbx sets itself; microsandbox_flags can't override them
 var reservedFlags = []string{"name", "conf", "net-conf", "workdir"}
 
-// microsandboxFlags passes microsandbox_flags uninterpreted: a list repeats the flag, true is a bare flag,
-// false or null omits it.
+// microsandboxFlags passes microsandbox_flags uninterpreted: a list repeats the flag,
+// true is a bare flag, false or null omits it.
 func microsandboxFlags(cfg *config.Config) ([]msb.Flag, error) {
 	names := make([]string, 0, len(cfg.MicrosandboxFlags))
 	for k := range cfg.MicrosandboxFlags {

@@ -1,5 +1,5 @@
-// Package feature holds what mbx adds to a sandbox for each enabled feature. The agent adds to it in the
-// same form.
+// Package feature holds what mbx adds to a sandbox for each enabled feature.
+// The agent adds to it in the same form.
 package feature
 
 import (
@@ -21,8 +21,8 @@ type Feature struct {
 	Prompt    string // a line for the sandbox prompt given to claude
 }
 
-// HostTask is a one-shot task on the host, run once the VM is set up. It runs alongside the agent, which
-// doesn't wait for it, and is stopped when the agent exits.
+// HostTask is a one-shot task on the host, run once the VM is set up. It runs alongside the agent,
+// which doesn't wait for it, and is stopped when the agent exits.
 type HostTask struct {
 	Title, Detail string
 	// Prepare runs before the agent starts: checks, and progress lines (in dry-run, the commands). It returns
@@ -67,8 +67,8 @@ func Enabled(cfg *config.Config) ([]Feature, error) {
 	return out, nil
 }
 
-// AllSecrets returns the features' secrets with their sources in the config, whether or not the config
-// enables the features
+// AllSecrets returns the features' secrets with their sources in the config,
+// whether or not the config enables the features
 func AllSecrets(cfg *config.Config) []Feature {
 	return []Feature{
 		{Name: "docker.ecr", Secret: ecrSecret(cfg)},

@@ -25,8 +25,8 @@ func WriteConfig(t *testing.T, yamlText string) string {
 	return dir
 }
 
-// Dedent removes the indentation common to the non-blank lines, the blank first line, and the closing
-// backquote's indentation.
+// Dedent removes the indentation common to the non-blank lines, the blank first line,
+// and the closing backquote's indentation.
 func Dedent(s string) string {
 	lines := strings.Split(strings.TrimPrefix(s, "\n"), "\n")
 	prefix, first := "", true

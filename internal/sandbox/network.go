@@ -7,16 +7,16 @@ import (
 	"github.com/nao23/mbx/internal/config"
 )
 
-// allowHost is a destination mbx allows. intercept turns on TLS interception, which secret substitution
-// requires.
+// allowHost is a destination mbx allows. intercept turns on TLS interception,
+// which secret substitution requires.
 type allowHost struct {
 	name      string
 	intercept bool
 }
 
-// buildNetwork adds mbx's secret destinations and hosts to microsandbox_config.network. ipRules go first, as
-// the first matching rule wins and IP rules skip microsandbox's wait on domain rules. It's a single config,
-// as microsandbox replaces lists when layering configs.
+// buildNetwork adds mbx's secret destinations and hosts to microsandbox_config.network. ipRules go first,
+// as the first matching rule wins and IP rules skip microsandbox's wait on domain rules.
+// It's a single config, as microsandbox replaces lists when layering configs.
 func buildNetwork(cfg *config.Config, hosts []allowHost, ipRules []string) map[string]any {
 	nm := map[string]any{}
 	if n, ok := cfg.Microsandbox["network"].(map[string]any); ok {
@@ -41,8 +41,8 @@ func buildNetwork(cfg *config.Config, hosts []allowHost, ipRules []string) map[s
 
 	nm["allow"] = append(append([]string{}, ipRules...), allow...)
 
-	// Not every client trusts microsandbox's CA (Java, containers that ignore the CA variables), so intercept
-	// nothing else
+	// Not every client trusts microsandbox's CA (Java, containers that ignore the CA variables),
+	// so intercept nothing else
 	tls := map[string]any{}
 	if t, ok := nm["tls"].(map[string]any); ok {
 		for k, v := range t {

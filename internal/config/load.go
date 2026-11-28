@@ -108,8 +108,8 @@ func Choose(workspace string) (path, matched string, err error) {
 	return "", "", nil
 }
 
-// File is a config file in the config dir, with its directories (absolute and cleaned), or the error that
-// makes it unusable.
+// File is a config file in the config dir, with its directories (absolute and cleaned),
+// or the error that makes it unusable.
 type File struct {
 	Path        string
 	Directories []string

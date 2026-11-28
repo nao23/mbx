@@ -44,8 +44,8 @@ func newGitHub(cfg *config.Config) (*Feature, error) {
 	return f, nil
 }
 
-// githubMetaURL lists GitHub's hosts and IP ranges. It needs no auth (60 requests an hour per IP). A variable
-// for tests
+// githubMetaURL lists GitHub's hosts and IP ranges. It needs no auth (60 requests an hour per IP).
+// A variable for tests
 var githubMetaURL = "https://api.github.com/meta"
 
 // githubMeta fetches /meta once per process, as features are built more than once per run
@@ -90,8 +90,8 @@ func githubSSHRules() []string {
 }
 
 // githubActionsStorage returns the Actions artifact and log storage hosts (gh run download, gh run view --log).
-// They're Azure Blob Storage accounts, so only GitHub's are allowed, not *.blob.core.windows.net. The rest of
-// /meta's actions domains are for runners, and mostly under *.githubusercontent.com already
+// They're Azure Blob Storage accounts, so only GitHub's are allowed, not *.blob.core.windows.net.
+// The rest of /meta's actions domains are for runners, and mostly under *.githubusercontent.com already
 func githubActionsStorage() []string {
 	meta := githubMeta()
 	if meta == nil {

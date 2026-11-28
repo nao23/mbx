@@ -17,8 +17,8 @@ const (
 	HostToVM = "Host -> VM"
 )
 
-// Step prints a heading for the commands that follow: in dry-run with their purpose and location, otherwise
-// as a progress line.
+// Step prints a heading for the commands that follow: in dry-run with their purpose and location,
+// otherwise as a progress line.
 func (r *Runner) Step(where, title string, details ...string) {
 	if !r.DryRun {
 		ui.Step(title, "")

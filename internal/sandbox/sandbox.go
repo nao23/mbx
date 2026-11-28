@@ -42,8 +42,8 @@ func New(cfg *config.Config, workspace, name string, dryRun bool) (*Sandbox, err
 	return &Sandbox{cfg: cfg, ag: ag, name: name, workspace: workspace, r: &msb.Runner{DryRun: dryRun}}, nil
 }
 
-// Run creates the sandbox or reconnects to it, runs the agent with the terminal attached, and returns its
-// exit code. args come after --.
+// Run creates the sandbox or reconnects to it, runs the agent with the terminal attached,
+// and returns its exit code. args come after --.
 func (s *Sandbox) Run(args []string) (int, error) {
 	r, cfg, name := s.r, s.cfg, s.name
 	if why := defaultImageOutdated(); cfg.Image() == DefaultImage && why != "" {

@@ -6,15 +6,15 @@ upstream=$(awk '/^nameserver/ && $2 ~ /\./ {print $2; exit}' /etc/resolv.conf)
 pidof dnsmasq >/dev/null || dnsmasq --no-resolv --server="$upstream" --listen-address=172.17.0.1 --bind-dynamic \
   --filter-AAAA --edns-packet-max=512 --no-hosts --cache-size=1000
 
-# Containers and docker build's RUN steps trust microsandbox's CA like the VM does, through mbx-runc, which
-# wraps runc. It mounts the CA files on the container's /dev (a tmpfs, so nothing is left in a built image)
-# and points the usual CA variables at them, unless the container sets them. Written while dockerd is down,
-# so no mbx-runc is running
+# Containers and docker build's RUN steps trust microsandbox's CA like the VM does, through mbx-runc.
+# mbx-runc wraps runc: it mounts the CA files on the container's /dev, and points the usual CA variables
+# at them unless the container sets them. /dev is a tmpfs, so nothing is left in a built image.
+# Written while dockerd is down, so no mbx-runc is running
 cat >/usr/local/bin/mbx-runc <<'EOF'
 #!/bin/sh
 
-# runc's create and run (the commands that start a container) take --bundle: the directory holding the
-# container's config.json
+# runc's create and run (the commands that start a container) take --bundle:
+# the directory holding the container's config.json
 bundle= prev=
 for arg in "$@"; do
 	[ "$prev" = --bundle ] && bundle=$arg

@@ -57,8 +57,8 @@ func gitQuote(s string) string {
 	return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(s) + `"`
 }
 
-// hostGitIgnore returns the global ignore file (core.excludesfile, else git's default) with symlinks
-// resolved, or ""
+// hostGitIgnore returns the global ignore file (core.excludesfile, else git's default)
+// with symlinks resolved, or ""
 func hostGitIgnore() string {
 	out, _ := gitConfig("--path", "core.excludesfile")
 	path := strings.TrimSpace(string(out))

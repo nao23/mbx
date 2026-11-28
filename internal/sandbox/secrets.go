@@ -19,8 +19,8 @@ import (
 )
 
 // resolveSecrets fetches secret values on the host into this process's environment, which msb inherits.
-// The VM gets placeholders. It fetches the secrets want picks by name (run all of them, rotation the
-// sandbox's), and returns the names of those it fetched.
+// The VM gets placeholders. It fetches the secrets that want picks by name, and returns the names of those
+// it fetched. run picks all of them, rotation the sandbox's.
 func resolveSecrets(r *msb.Runner, cfg *config.Config, features []feature.Feature, want func(env string) bool) ([]string, error) {
 	type fetch struct {
 		owner     string // the feature or agent, or secret_sources for the user's own
@@ -101,8 +101,8 @@ func resolveSecrets(r *msb.Runner, cfg *config.Config, features []feature.Featur
 }
 
 // RotateSecrets fetches the values of the secrets of the sandbox name, or else of the workspace's sandboxes,
-// again and swaps them in, running or not, without a restart. Each keeps its hosts; secrets added to or
-// removed from the config need the sandbox recreated.
+// again and swaps them in, running or not, without a restart. Each keeps its hosts;
+// secrets added to or removed from the config need the sandbox recreated.
 func RotateSecrets(cfg *config.Config, workspace, name string, dryRun bool) error {
 	names := []string{name}
 	if name == "" {

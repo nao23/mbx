@@ -58,9 +58,9 @@ func List(workspace string) error {
 }
 
 // Edit is mbx config edit: it opens a config file in the editor and checks it once the editor exits,
-// offering to open it again until it loads. The file is path if given, else name in the config dir, else the
-// one the workspace uses; with newFile, a new one for the workspace alone (named name, by default after
-// the workspace).
+// offering to open it again until it loads. The file is path if given, else name in the config dir,
+// else the one the workspace uses; with newFile, a new one for the workspace alone (named name,
+// by default after the workspace).
 func Edit(workspace, name, path string, newFile bool) error {
 	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		return errors.New("config edit opens an editor on a terminal; without one, edit the config file directly")
@@ -92,8 +92,8 @@ func Edit(workspace, name, path string, newFile bool) error {
 // uses. With newFile, it writes a new one for the workspace first.
 func chooseFile(workspace, name string, newFile bool) (string, error) {
 	st := ui.For(os.Stdout)
-	// A named file opens even when the config files don't load together (a directory in two of them), so
-	// it can be fixed
+	// A named file opens even when the config files don't load together (a directory in two of them),
+	// so it can be fixed
 	if name != "" && !newFile {
 		path, err := namedFile(name)
 		if err != nil {
@@ -158,8 +158,8 @@ func namedFile(name string) (string, error) {
 	return filepath.Join(Dir(), name), nil
 }
 
-// newFileText is a config file for the workspace, with the settings in base (another config file; its
-// header, version and directories dropped).
+// newFileText is a config file for the workspace, with the settings in base
+// (another config file; its header, version and directories dropped).
 func newFileText(workspace string, base []byte) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# mbx's config for %s and below. All settings and their defaults: mbx config defaults\n\n", tilde(workspace))
@@ -185,8 +185,8 @@ func newFileText(workspace string, base []byte) []byte {
 	return []byte(strings.TrimRight(b.String(), "\n") + "\n")
 }
 
-// openEditor runs $VISUAL or $EDITOR (vi if neither is set) on path. The variable may hold arguments, so
-// it's run by the shell.
+// openEditor runs $VISUAL or $EDITOR (vi if neither is set) on path. The variable may hold arguments,
+// so it's run by the shell.
 func openEditor(path string) error {
 	editor := os.Getenv("VISUAL")
 	if editor == "" {
@@ -203,8 +203,8 @@ func openEditor(path string) error {
 	return nil
 }
 
-// check loads the edited file and the config dir's files, and says which file the workspace now uses if
-// it's another (directories may have been changed).
+// check loads the edited file and the config dir's files, and says which file the workspace now uses
+// if it's another (directories may have been changed).
 func check(workspace, path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {

@@ -56,9 +56,9 @@ func newDocker(cfg *config.Config) (*Feature, error) {
 // hostImagesFile in the VM lists docker.host_images and how far their copy from the host has got.
 const hostImagesFile = "/run/mbx/host-images"
 
-// hostImagesTask copies docker.host_images from the host's Docker to the VM's in the background, as the copy
-// can take a while and the agent rarely needs Docker right away. So the VM needs no login to their
-// registries.
+// hostImagesTask copies docker.host_images from the host's Docker to the VM's in the background,
+// as the copy can take a while and the agent rarely needs Docker right away.
+// So the VM needs no login to their registries.
 func hostImagesTask(refs []string) *HostTask {
 	return &HostTask{
 		Title:  "Copy images from the host's Docker",

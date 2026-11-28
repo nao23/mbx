@@ -102,8 +102,8 @@ func (c *claude) flags(workspace string) []msb.Flag {
 			Note:  "Skills shared with the host (read-only)",
 		})
 	}
-	// The consent to the org's remote settings given on the host skips the prompt in the VM. Read-only so
-	// the VM can't consent itself
+	// The consent to the org's remote settings given on the host skips the prompt in the VM.
+	// Read-only so the VM can't consent itself
 	if consent := filepath.Join(host, "remote-settings-consent.json"); fileExists(consent) {
 		flags = append(flags, msb.Flag{
 			Name:  "--volume",
@@ -114,8 +114,8 @@ func (c *claude) flags(workspace string) []msb.Flag {
 	return flags
 }
 
-// hostSkills returns the skills in the host's ~/.claude/skills (directories with SKILL.md) by name, with
-// symlinks resolved, as a symlink to outside ~/.claude would dangle in the VM.
+// hostSkills returns the skills in the host's ~/.claude/skills (directories with SKILL.md) by name,
+// with symlinks resolved, as a symlink to outside ~/.claude would dangle in the VM.
 func hostSkills() map[string]string {
 	skills := map[string]string{}
 	entries, _ := os.ReadDir(filepath.Join(config.HostClaudeDir(), "skills"))
@@ -145,8 +145,8 @@ func (c *claude) sharedSkills(skills map[string]string) []string {
 	return slices.Compact(names)
 }
 
-// Prepare creates the shared parts of the host's ~/.claude that are missing, as msb doesn't create a
-// missing mount source.
+// Prepare creates the shared parts of the host's ~/.claude that are missing,
+// as msb doesn't create a missing mount source.
 func (c *claude) Prepare(r *msb.Runner, workspace string) error {
 	skills := hostSkills()
 	for _, name := range c.cfg.Claude.HostShare.Skills {
