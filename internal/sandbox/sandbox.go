@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/nao23/mbx/internal/agent"
 	"github.com/nao23/mbx/internal/config"
 	"github.com/nao23/mbx/internal/feature"
@@ -110,6 +112,63 @@ func (s *Sandbox) Run(args []string) (int, error) {
 		return exitErr.ExitCode(), nil
 	}
 	return 0, err
+}
+
+// create prepares the host, writes the config files for msb create from the plan, and creates and boots the
+// sandbox.
+func create(r *msb.Runner, cfg *config.Config, p plan, workspace, name string) error {
+	ag, _ := agent.New(cfg) // checked by validate
+	if err := ag.Prepare(r, workspace); err != nil {
+		return err
+	}
+
+	dir, err := os.MkdirTemp("", "mbx")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	confPath, netPath := filepath.Join(dir, "sandbox.yaml"), filepath.Join(dir, "network.yaml")
+	if err := writeYAML(confPath, p.conf); err != nil {
+		return err
+	}
+	if err := writeYAML(netPath, p.net); err != nil {
+		return err
+	}
+	r.Step(
+		msb.OnHost,
+		"Write the config files for msb create",
+		"sandbox.yaml: the microsandbox_config: section of the config (except network), passed through as-is",
+		"network.yaml: microsandbox_config.network plus the entries mbx adds",
+	)
+	// Written even in dry-run mode, to show their contents
+	if r.DryRun {
+		r.HideTmpDir(dir)
+		for _, f := range []string{confPath, netPath} {
+			data, _ := os.ReadFile(f)
+			fmt.Printf("cat > %s <<'EOF'\n%sEOF\n", r.Disp(f), collapseRules(string(data), p.ipRules))
+		}
+	}
+
+	r.Step(msb.HostToVM, "Create and boot the sandbox")
+	return r.TaskFlags(
+		ui.Err.Bold(name)+"  "+ui.Err.Dim(cfg.Image()),
+		"create",
+		append(
+			[]msb.Flag{
+				{Name: "--conf", Value: confPath, Note: "Config files"},
+				{Name: "--net-conf", Value: netPath, Note: "Config files"},
+			},
+			p.flags...,
+		),
+	)
+}
+
+func writeYAML(path string, v any) error {
+	out, err := yaml.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, out, 0o600)
 }
 
 // start runs the agent with the terminal attached and waits for it to exit.
