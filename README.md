@@ -56,7 +56,15 @@ By default the VM image is `mbx-default:latest`, built from mbx's built-in [`Doc
 
 ### Using your own image
 
-Write a Dockerfile, and build it with `mbx build`: like `docker build`, but it also loads the image into microsandbox.
+The default image has what mbx's features use and common tools. To add more, build an image on the default one with `mbx build`: like `docker build`, but it also loads the image into microsandbox.
+
+```dockerfile
+FROM mbx-default:latest
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      pkg-config python3-dev default-libmysqlclient-dev \
+ && rm -rf /var/lib/apt/lists/*
+```
 
 ```sh
 mbx build -t my-sandbox:latest .
@@ -67,10 +75,10 @@ microsandbox_config:
   image: my-sandbox:latest
 ```
 
-The image needs what the agent and the enabled features run (Ubuntu package names in parentheses):
+An image not built on the default one needs what the agent and the enabled features run (Ubuntu package names in parentheses):
 
 - `claude` agent: `claude`
-- `docker`: `dockerd` and the docker CLI (`docker.io`), `iptables`, `dnsmasq` (`dnsmasq-base`)
+- `docker`: `dockerd` and the docker CLI (`docker.io`), `iptables`, `dnsmasq` (`dnsmasq-base`), `jq`
 - `docker.emulation`: QEMU user mode with its binfmt entries (`qemu-user`, `qemu-user-binfmt`)
 - `github`: `git`, and `gh` to use the GitHub CLI
 - `uv`: `uv`
