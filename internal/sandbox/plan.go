@@ -183,10 +183,17 @@ func create(r *msb.Runner, cfg *config.Config, p plan, workspace, name string) e
 	}
 
 	r.Step(msb.HostToVM, "Create and boot the sandbox")
-	return r.TaskFlags(ui.Err.Bold(name)+"  "+ui.Err.Dim(cfg.Image()), "create", append([]msb.Flag{
-		{Name: "--conf", Value: confPath, Note: "Config files"},
-		{Name: "--net-conf", Value: netPath, Note: "Config files"},
-	}, p.flags...))
+	return r.TaskFlags(
+		ui.Err.Bold(name)+"  "+ui.Err.Dim(cfg.Image()),
+		"create",
+		append(
+			[]msb.Flag{
+				{Name: "--conf", Value: confPath, Note: "Config files"},
+				{Name: "--net-conf", Value: netPath, Note: "Config files"},
+			},
+			p.flags...,
+		),
+	)
 }
 
 func writeYAML(path string, v any) error {
