@@ -228,7 +228,7 @@ Where a value comes from is written the same way everywhere, in `secret_source` 
 
 ### Built-in (claude, ECR, GitHub)
 
-The environment variable in the VM and the destination are fixed; only the source can be changed with `secret_source`. The destination and the other hosts the feature needs are allowed automatically ([docs/network.md](docs/network.md)).
+The environment variable in the VM and the destination are fixed; only the source can be changed with `secret_source`. The destination and the other hosts the feature needs are allowed automatically ([docs/how-it-works.md](docs/how-it-works.md#network)).
 
 | Setting | Environment variable in the VM → destination |
 |---|---|
@@ -270,7 +270,7 @@ mcp_gateway:
 - **`mcp_servers`**: defined by `mcp_gateway.servers`, or else the host claude's user-scope server of the same name (`claude mcp add --scope user`). Log in once with `mbx mcp login [<server>]` (without one, to those not logged in to); the gateway refreshes the tokens
 - **`claude_ai_connectors`**: use the host claude's claude.ai login. When it expires, use the host's claude once
 
-`mbx mcp` shows the logins and their expiry. See [docs/mcp-gateway.md](docs/mcp-gateway.md) for how the gateway works, server definitions and logins.
+`mbx mcp` shows the logins and their expiry. See [docs/how-it-works.md](docs/how-it-works.md#mcp-gateway) for how the gateway works, server definitions and logins.
 
 ## How it works
 
@@ -287,33 +287,7 @@ mcp_gateway:
 6. [VM] Start claude with `msb exec -t`
 7. [Host] Remove the sandbox on exit
 
-### Network
-
-Traffic to domains not on the allowlist is blocked, and TLS is intercepted only for secret destinations. See [docs/network.md](docs/network.md) for the details and the hosts mbx adds.
-
-### Docker in the VM
-
-- `/var/lib/docker` is an ext4 disk dedicated to the sandbox, since containers can't be created on the root filesystem (overlay)
-- Container DNS goes through dnsmasq in the VM (`172.17.0.1`). mbx starts dockerd with `--dns 172.17.0.1` to set this up (if the image's `daemon.json` has `dns`, that's used instead). Some routers answer a non-EDNS query with more than 512 bytes; microsandbox's DNS can't receive it all and returns SERVFAIL, and musl (Alpine-based) containers fail to resolve names. dnsmasq keeps answers small to prevent this
-- Containers and `docker build`'s `RUN` steps trust microsandbox's CA (for intercepted hosts like `github.com`): dockerd runs runc through a wrapper that mounts the VM's CA bundle at `/dev/mbx-ca-bundle.crt` and points `SSL_CERT_FILE`, `GIT_SSL_CAINFO`, `CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` at it, and `NODE_EXTRA_CA_CERTS` at the CA alone (`/dev/mbx-ca.crt`), unless the container sets them. Nothing is left in built images. Tools with their own trust store (Java, etc.) don't use it
-- Binaries for other architectures run under QEMU (user mode). Speed is about a third to a quarter of native
-
-### Sharing with the host's `~/.claude`
-
-Claude Code's config dir (`CLAUDE_CONFIG_DIR`) lives in the VM, with only parts of the host's `~/.claude` overlaid.
-
-| Host | In the VM | Access |
-|---|---|---|
-| `projects/`, `file-history/`, `history.jsonl` | Same layout | Read-write |
-| `CLAUDE.md`, `settings.json` | Same layout | Read-only |
-| `remote-settings-consent.json` | Same layout | Read-only |
-| `skills/<name>` in `host_share.skills` | Same layout | Read-only |
-
-Skills are shared only when listed in `host_share.skills` (`["*"]` for all), as some rely on host tools that aren't in the VM. Each is mounted from where its symlink points, as a symlink out of `~/.claude` would dangle in the VM. Only directories with `SKILL.md` count as skills; others in `skills/` (such as org-synced ones) aren't shared.
-
-Everything else, such as `.claude.json` and the plugin cache, is created in the VM and removed with the sandbox. Files that `settings.json` refers to (a status line script, hooks, etc.) aren't mounted; add them with `microsandbox_flags.volume`, at the path `settings.json` names.
-
-`projects/` is mounted whole, so claude in the VM creates the working directory's session directory there itself, only when it starts a session. This also means the VM can read and write the session history of every project, not just the working directory's.
+See [docs/how-it-works.md](docs/how-it-works.md) for the network, Docker in the VM, what is shared with the host's `~/.claude`, and the MCP gateway.
 
 ## Limitations
 
