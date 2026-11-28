@@ -69,9 +69,13 @@ func hostImagesTask(refs []string) *HostTask {
 	}
 }
 
-const hostImagesPrompt = "- Some Docker images are copied from the host's Docker in the background after start, as the VM may not be able to pull them from their registries. " +
-	"`" + hostImagesFile + "` lists them and how far the copy has got. If one is missing, check that file and wait for its copy instead of pulling it; " +
-	"if its copy failed, tell the user what the file says. Avoid pulling them (`docker compose pull`, `--pull always`), which may fail or replace the copy"
+// hostImagesPrompt is the line about the copy in the sandbox prompt given to claude.
+const hostImagesPrompt = "- Some Docker images are copied from the host's Docker in the background after start, " +
+	"as the VM may not be able to pull them from their registries. " +
+	"`" + hostImagesFile + "` lists them and how far the copy has got. " +
+	"If one is missing, check that file and wait for its copy instead of pulling it; " +
+	"if its copy failed, tell the user what the file says. " +
+	"Avoid pulling them (`docker compose pull`, `--pull always`), which may fail or replace the copy"
 
 type hostImage struct {
 	ref      string
