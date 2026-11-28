@@ -10,8 +10,21 @@ import (
 	"strings"
 	"testing"
 
+	"mvdan.cc/sh/v3/syntax"
+
 	"github.com/nao23/mbx/internal/msb"
 )
+
+// The bridge script, with the port set, must parse as POSIX sh
+func TestBridgeScript(t *testing.T) {
+	s := BridgeScript(41837)
+	if !strings.HasPrefix(s, "port=41837\n") {
+		t.Errorf("BridgeScript doesn't set the port first:\n%s", s)
+	}
+	if _, err := syntax.NewParser(syntax.Variant(syntax.LangPOSIX)).Parse(strings.NewReader(s), "bridge.sh"); err != nil {
+		t.Errorf("bridge.sh doesn't parse: %v", err)
+	}
+}
 
 var testPolicy = toolPolicy{
 	permissions:       map[string]string{"slack_create_canvas": "blocked", "slack_send_message": "ask"},

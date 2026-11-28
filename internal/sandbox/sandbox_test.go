@@ -270,7 +270,7 @@ func TestBuildPlanClaude(t *testing.T) {
 	if got, want := flagValues(p.flags, "--vsock"), []string{home + "/.local/state/mbx/mcp-gateway/s/ab12cd34.sock:41837"}; !slices.Equal(got, want) {
 		t.Errorf("--vsock = %v, want %v", got, want)
 	}
-	if s := setupScript(features(cfg, "/work/repo", gateway)); !strings.Contains(s, "VSOCK-CONNECT:2:41837") {
+	if s := setupScript(features(cfg, "/work/repo", gateway)); !strings.Contains(s, "port=41837\n") || !strings.Contains(s, `"VSOCK-CONNECT:2:$port"`) {
 		t.Errorf("setup script lacks the MCP bridge:\n%s", s)
 	}
 

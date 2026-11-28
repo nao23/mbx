@@ -7,6 +7,7 @@ package mcpgateway
 
 import (
 	"crypto/rand"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -266,8 +267,9 @@ func LoggedIn(server, url string) (bool, error) {
 
 // Setup registers the sandbox and starts the gateway if needed, which then opens the sandbox's socket.
 func Setup(r *msb.Runner, cfg *config.Config, name string, servers []string) (*Registration, error) {
-	// Without a login, the server just fails to connect in the VM. The gateway reads the login on each
-	// connection until it has one, so logging in later and reconnecting (/mcp in claude) works
+	// Without a login, the server just fails to connect in the VM.
+	// The gateway reads the login on each connection until it has one,
+	// so logging in later and reconnecting (/mcp in claude) works
 	for _, s := range servers {
 		if strings.HasPrefix(s, ClaudeAIPrefix) {
 			continue
@@ -303,12 +305,15 @@ func StartFor(r *msb.Runner, reg *Registration) error {
 		"Start the MCP gateway if it isn't running",
 		"Forwards the VM's MCP requests with tokens kept on the host; one gateway serves all sandboxes",
 	)
-	return r.Do(func() error {
-		if err := Start(); err != nil {
-			return err
-		}
-		return waitSocket(reg.ID)
-	}, "mbx", "mcp-gw", "start")
+	return r.Do(
+		func() error {
+			if err := Start(); err != nil {
+				return err
+			}
+			return waitSocket(reg.ID)
+		},
+		"mbx", "mcp-gw", "start",
+	)
 }
 
 // register uses a placeholder ID in dry-run mode.
@@ -337,15 +342,13 @@ func URL(port int, server string) string {
 	return fmt.Sprintf("http://127.0.0.1:%d/%s", port, url.PathEscape(server))
 }
 
+//go:embed bridge.sh
+var bridgeScript string
+
 // BridgeScript starts socat in the VM, relaying 127.0.0.1:<port> to the vsock port
-// that msb exposes the sandbox's socket on.
+// that msb exposes the sandbox's socket on (bridge.sh).
 func BridgeScript(port int) string {
-	// /run outlives a stop and pids are reused after the restart, so the pid's process must be socat
-	return fmt.Sprintf(`pid=/run/mbx-mcp-bridge.pid
-[ -f "$pid" ] && [ "$(cat "/proc/$(cat "$pid")/comm" 2>/dev/null)" = socat ] && exit 0
-command -v socat >/dev/null || { echo "warning: socat is missing; MCP servers are unavailable" >&2; exit 0; }
-nohup socat TCP-LISTEN:%[1]d,bind=127.0.0.1,reuseaddr,fork VSOCK-CONNECT:2:%[1]d >/var/log/mbx-mcp-bridge.log 2>&1 &
-echo $! >"$pid"`, port)
+	return fmt.Sprintf("port=%d\n", port) + bridgeScript
 }
 
 func randomHex(n int) string {

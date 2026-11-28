@@ -233,8 +233,11 @@ func writeHostImagesFile(ctx context.Context, name string, images []*hostImage, 
 	if finished {
 		b.WriteString("# Finished\n")
 	}
-	cmd := exec.CommandContext(ctx, "msb", "exec", "--stream", name, "--", "sh", "-c",
-		"mkdir -p /run/mbx && cat >"+hostImagesFile+".tmp && mv "+hostImagesFile+".tmp "+hostImagesFile)
+	cmd := exec.CommandContext(
+		ctx,
+		"msb", "exec", "--stream", name, "--", "sh", "-c",
+		"mkdir -p /run/mbx && cat >"+hostImagesFile+".tmp && mv "+hostImagesFile+".tmp "+hostImagesFile,
+	)
 	cmd.Stdin = strings.NewReader(b.String())
 	_ = cmd.Run()
 }

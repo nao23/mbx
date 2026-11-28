@@ -262,11 +262,15 @@ func discover(ctx context.Context, serverURL string) (*authServer, string, error
 	}
 	iOrigin, iPath := iu.Scheme+"://"+iu.Host, strings.TrimSuffix(iu.Path, "/")
 	var as authServer
-	if !getJSON(ctx, []string{
-		iOrigin + "/.well-known/oauth-authorization-server" + iPath,
-		iOrigin + "/.well-known/openid-configuration" + iPath,
-		issuer + "/.well-known/openid-configuration",
-	}, &as) || as.AuthorizationEndpoint == "" || as.TokenEndpoint == "" {
+	if !getJSON(
+		ctx,
+		[]string{
+			iOrigin + "/.well-known/oauth-authorization-server" + iPath,
+			iOrigin + "/.well-known/openid-configuration" + iPath,
+			issuer + "/.well-known/openid-configuration",
+		},
+		&as,
+	) || as.AuthorizationEndpoint == "" || as.TokenEndpoint == "" {
 		return nil, "", fmt.Errorf("no OAuth authorization server metadata found for %s (authorization server %s)", serverURL, issuer)
 	}
 	if as.Issuer == "" {
