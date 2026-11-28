@@ -295,6 +295,7 @@ Traffic to domains not on the allowlist is blocked, and TLS is intercepted only 
 
 - `/var/lib/docker` is an ext4 disk dedicated to the sandbox, since containers can't be created on the root filesystem (overlay)
 - Container DNS goes through dnsmasq in the VM (`172.17.0.1`). mbx starts dockerd with `--dns 172.17.0.1` to set this up (if the image's `daemon.json` has `dns`, that's used instead). Some routers answer a non-EDNS query with more than 512 bytes; microsandbox's DNS can't receive it all and returns SERVFAIL, and musl (Alpine-based) containers fail to resolve names. dnsmasq keeps answers small to prevent this
+- Containers and `docker build`'s `RUN` steps trust microsandbox's CA (for intercepted hosts like `github.com`): dockerd runs runc through a wrapper that mounts the VM's CA bundle at `/dev/mbx-ca-bundle.crt` and points `SSL_CERT_FILE`, `GIT_SSL_CAINFO`, `CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` at it, and `NODE_EXTRA_CA_CERTS` at the CA alone (`/dev/mbx-ca.crt`), unless the container sets them. Nothing is left in built images. Tools with their own trust store (Java, etc.) don't use it
 - Binaries for other architectures run under QEMU (user mode). Speed is about a third to a quarter of native
 
 ### Sharing with the host's `~/.claude`

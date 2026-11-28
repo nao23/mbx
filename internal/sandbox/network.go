@@ -41,7 +41,8 @@ func buildNetwork(cfg *config.Config, hosts []allowHost, ipRules []string) map[s
 
 	nm["allow"] = append(append([]string{}, ipRules...), allow...)
 
-	// Containers in the VM don't trust microsandbox's CA, so intercept nothing else
+	// Not every client trusts microsandbox's CA (Java, containers that ignore the CA variables), so intercept
+	// nothing else
 	tls := map[string]any{}
 	if t, ok := nm["tls"].(map[string]any); ok {
 		for k, v := range t {

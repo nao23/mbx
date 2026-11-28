@@ -45,7 +45,7 @@ func newDocker(cfg *config.Config) (*Feature, error) {
 			Value: "/var/lib/docker:kind=disk,size=" + cfg.Docker.Disk,
 			Note:  "ext4 disk for Docker (removed with the sandbox)",
 		}},
-		Setup: &Setup{"Start Docker Engine, relaying container DNS through dnsmasq", dockerScript},
+		Setup: &Setup{"Start Docker Engine, relaying container DNS through dnsmasq; containers and builds trust microsandbox's CA", dockerScript},
 	}
 	if refs := cfg.Docker.HostImages; len(refs) > 0 {
 		f.PostStart, f.Prompt = hostImagesTask(refs), hostImagesPrompt

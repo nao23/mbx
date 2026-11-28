@@ -3,7 +3,7 @@
 How mbx sets up the VM's network on top of microsandbox's. The allowlist is `microsandbox_config.network.allow` in the config.
 
 - Traffic to domains not on the allowlist is blocked
-- TLS is intercepted (decrypted) only for secret destinations (`api.anthropic.com`, the ECR registry, `github.com`, etc.). Other allowed domains aren't intercepted (`tls.bypass`), as containers in the VM don't trust microsandbox's CA
+- TLS is intercepted (decrypted) only for secret destinations (`api.anthropic.com`, the ECR registry, `github.com`, etc.). Other allowed domains aren't intercepted (`tls.bypass`), as not every client trusts microsandbox's CA (containers get it only through the CA variables mbx sets, and Java and the like use their own trust store)
 - microsandbox replaces lists whole when layering configs, so for `network` mbx adds its entries first and passes it as one config
 - A rule with only a domain (`github.com`, etc.) allows all ports. To restrict ports, write e.g. `github.com:tcp:443`
 - Rules work by domain, IP and port only. microsandbox can't restrict traffic by HTTP method or path (e.g. allow GET but not POST to an API)
